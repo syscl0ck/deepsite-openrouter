@@ -5,9 +5,10 @@ import { headers } from "next/headers";
 export async function getAuth() {
   const authList = await headers();
   const host = authList.get("host") ?? "localhost:3000";
-  const url = host.includes("/spaces/enzostvs")
-    ? "enzostvs-deepsite.hf.space"
-    : host;
+  // const url = host.includes("/spaces/enzostvs")
+  //   ? "enzostvs-deepsite.hf.space"
+  //   : host;
+  const url = host.includes("localhost") ? host : "deepsite.hf.co";
   const redirect_uri =
     `${host.includes("localhost") ? "http://" : "https://"}` +
     url +

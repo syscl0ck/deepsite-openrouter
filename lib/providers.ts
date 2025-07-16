@@ -29,6 +29,11 @@ export const PROVIDERS = {
     max_tokens: 128_000,
     id: "together",
   },
+  groq: {
+    name: "Groq",
+    max_tokens: 16_384,
+    id: "groq",
+  },
 };
 
 export const MODELS = [
@@ -52,5 +57,12 @@ export const MODELS = [
     autoProvider: "novita",
     isNew: true,
     isThinker: true,
+  },
+  {
+    value: "moonshotai/Kimi-K2-Instruct",
+    label: "Kimi K2 Instruct",
+    providers: ["together", "novita", "groq"],
+    autoProvider: "groq",
+    isNew: true,
   },
 ];

@@ -55,7 +55,6 @@ export const MODELS = [
       "sambanova",
     ],
     autoProvider: "novita",
-    isNew: true,
     isThinker: true,
   },
   {

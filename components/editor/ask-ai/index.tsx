@@ -67,6 +67,10 @@ export function AskAI({
   const [controller, setController] = useState<AbortController | null>(null);
   const [isFollowUp, setIsFollowUp] = useState(true);
 
+  const selectedModel = useMemo(() => {
+    return MODELS.find((m: { value: string }) => m.value === model);
+  }, [model]);
+
   const callAi = async (redesignMarkdown?: string) => {
     if (isAiWorking) return;
     if (!redesignMarkdown && !prompt.trim()) return;
@@ -178,7 +182,9 @@ export function AskAI({
               setPrompt("");
               setisAiWorking(false);
               setHasAsked(true);
-              setModel(MODELS[0].value);
+              if (selectedModel?.isThinker) {
+                setModel(MODELS[0].value);
+              }
               if (audio.current) audio.current.play();
 
               // Now we have the complete HTML including </html>, so set it to be sure
@@ -444,7 +450,7 @@ export function AskAI({
                 id="diff-patch-checkbox"
                 checked={isFollowUp}
                 onCheckedChange={(e) => {
-                  if (e === true && !isSameHtml) {
+                  if (e === true && !isSameHtml && selectedModel?.isThinker) {
                     setModel(MODELS[0].value);
                   }
                   setIsFollowUp(e === true);

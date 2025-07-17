@@ -223,7 +223,8 @@ export async function PUT(request: NextRequest) {
   const userToken = request.cookies.get(MY_TOKEN_KEY())?.value;
 
   const body = await request.json();
-  const { prompt, html, previousPrompt, provider, selectedElementHtml } = body;
+  const { prompt, html, previousPrompt, provider, selectedElementHtml, model } =
+    body;
 
   if (!prompt || !html) {
     return NextResponse.json(
@@ -232,7 +233,15 @@ export async function PUT(request: NextRequest) {
     );
   }
 
-  const selectedModel = MODELS[0];
+  const selectedModel = MODELS.find(
+    (m) => m.value === model || m.label === model
+  );
+  if (!selectedModel) {
+    return NextResponse.json(
+      { ok: false, error: "Invalid model selected" },
+      { status: 400 }
+    );
+  }
 
   let token = userToken;
   let billTo: string | null = null;

@@ -58,10 +58,16 @@ export const MODELS = [
     isThinker: true,
   },
   {
+    value: "Qwen/Qwen3-Coder-480B-A35B-Instruct",
+    label: "Qwen3 Coder 480B A35B Instruct",
+    providers: ["novita", "hyperbolic"],
+    autoProvider: "novita",
+    isNew: true,
+  },
+  {
     value: "moonshotai/Kimi-K2-Instruct",
     label: "Kimi K2 Instruct",
     providers: ["together", "novita", "groq"],
     autoProvider: "groq",
-    isNew: true,
   },
 ];

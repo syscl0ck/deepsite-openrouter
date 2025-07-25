@@ -71,7 +71,7 @@ export function DeployButton({
               <div>
                 <Button variant="default" className="max-lg:hidden !px-4">
                   <MdSave className="size-4" />
-                  Save your Project
+                  Deploy your Project
                 </Button>
                 <Button variant="default" size="sm" className="lg:hidden">
                   Deploy

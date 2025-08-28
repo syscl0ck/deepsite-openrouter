@@ -82,6 +82,8 @@ async function getMe() {
   }
 }
 
+// if domain isn't deepsite.hf.co or enzostvs-deepsite.hf.space redirect to deepsite.hf.co
+
 export default async function RootLayout({
   children,
 }: Readonly<{

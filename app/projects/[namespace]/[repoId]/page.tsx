@@ -32,9 +32,9 @@ export default async function ProjectNamespacePage({
   params: Promise<{ namespace: string; repoId: string }>;
 }) {
   const { namespace, repoId } = await params;
-  const project = await getProject(namespace, repoId);
-  if (!project?.html) {
+  const data = await getProject(namespace, repoId);
+  if (!data?.pages) {
     redirect("/projects");
   }
-  return <AppEditor project={project} />;
+  return <AppEditor project={data} pages={data.pages} />;
 }

@@ -7,12 +7,13 @@ import { useParams } from "next/navigation";
 import Loading from "@/components/loading";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
+import { Page } from "@/types";
 
 export function SaveButton({
-  html,
+  pages,
   prompts,
 }: {
-  html: string;
+  pages: Page[];
   prompts: string[];
 }) {
   // get params from URL
@@ -27,7 +28,7 @@ export function SaveButton({
 
     try {
       const res = await api.put(`/me/projects/${namespace}/${repoId}`, {
-        html,
+        pages,
         prompts,
       });
       if (res.data.ok) {
@@ -59,7 +60,7 @@ export function SaveButton({
         onClick={updateSpace}
       >
         <MdSave className="size-4" />
-        Deploy your Project{" "}
+        Publish your Project{" "}
         {loading && <Loading className="ml-2 size-4 animate-spin" />}
       </Button>
       <Button
@@ -68,7 +69,7 @@ export function SaveButton({
         className="lg:hidden relative"
         onClick={updateSpace}
       >
-        Deploy {loading && <Loading className="ml-2 size-4 animate-spin" />}
+        Publish {loading && <Loading className="ml-2 size-4 animate-spin" />}
       </Button>
     </>
   );

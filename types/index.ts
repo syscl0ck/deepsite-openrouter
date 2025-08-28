@@ -9,7 +9,7 @@ export interface User {
 }
 
 export interface HtmlHistory {
-  html: string;
+  pages: Page[];
   createdAt: Date;
   prompt: string;
 }
@@ -23,4 +23,9 @@ export interface Project {
   _id?: string;
   _updatedAt?: Date;
   _createdAt?: Date;
+}
+
+export interface Page {
+  path: string;
+  html: string;
 }

@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { GridPattern } from "@/components/magic-ui/grid-pattern";
 import { htmlTagToText } from "@/lib/html-tag-to-text";
+import { Page } from "@/types";
 
 export const Preview = ({
   html,
@@ -16,12 +17,16 @@ export const Preview = ({
   device,
   currentTab,
   iframeRef,
+  pages,
+  setCurrentPage,
   isEditableModeEnabled,
   onClickElement,
 }: {
   html: string;
   isResizing: boolean;
   isAiWorking: boolean;
+  pages: Page[];
+  setCurrentPage: React.Dispatch<React.SetStateAction<string>>;
   ref: React.RefObject<HTMLDivElement | null>;
   iframeRef?: React.RefObject<HTMLIFrameElement | null>;
   device: "desktop" | "mobile";
@@ -65,6 +70,49 @@ export const Preview = ({
       }
     }
   };
+  const handleCustomNavigation = (event: MouseEvent) => {
+    if (iframeRef?.current) {
+      const iframeDocument = iframeRef.current.contentDocument;
+      if (iframeDocument) {
+        const findClosestAnchor = (
+          element: HTMLElement
+        ): HTMLAnchorElement | null => {
+          let current = element;
+          while (current && current !== iframeDocument.body) {
+            if (current.tagName === "A") {
+              return current as HTMLAnchorElement;
+            }
+            current = current.parentElement as HTMLElement;
+          }
+          return null;
+        };
+
+        const anchorElement = findClosestAnchor(event.target as HTMLElement);
+
+        if (anchorElement) {
+          let href = anchorElement.getAttribute("href");
+          if (href) {
+            event.stopPropagation();
+            event.preventDefault();
+
+            if (href.includes("#") && !href.includes(".html")) {
+              const targetElement = iframeDocument.querySelector(href);
+              if (targetElement) {
+                targetElement.scrollIntoView({ behavior: "smooth" });
+              }
+              return;
+            }
+
+            href = href.split(".html")[0] + ".html";
+            const isPageExist = pages.some((page) => page.path === href);
+            if (isPageExist) {
+              setCurrentPage(href);
+            }
+          }
+        }
+      }
+    }
+  };
 
   useUpdateEffect(() => {
     const cleanupListeners = () => {
@@ -79,7 +127,6 @@ export const Preview = ({
     if (iframeRef?.current) {
       const iframeDocument = iframeRef.current.contentDocument;
       if (iframeDocument) {
-        // Clean up existing listeners first
         cleanupListeners();
 
         if (isEditableModeEnabled) {
@@ -90,7 +137,6 @@ export const Preview = ({
       }
     }
 
-    // Clean up when component unmounts or dependencies change
     return cleanupListeners;
   }, [iframeRef, isEditableModeEnabled]);
 
@@ -167,6 +213,14 @@ export const Preview = ({
               block: isAiWorking ? "end" : "start",
               inline: "nearest",
               behavior: isAiWorking ? "instant" : "smooth",
+            });
+          }
+          // add event listener to all links in the iframe to handle navigation
+          if (iframeRef?.current?.contentWindow?.document) {
+            const links =
+              iframeRef.current.contentWindow.document.querySelectorAll("a");
+            links.forEach((link) => {
+              link.addEventListener("click", handleCustomNavigation);
             });
           }
         }}

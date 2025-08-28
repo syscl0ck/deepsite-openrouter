@@ -1,5 +1,5 @@
 import { History as HistoryIcon } from "lucide-react";
-import { HtmlHistory } from "@/types";
+import { HtmlHistory, Page } from "@/types";
 import {
   Popover,
   PopoverContent,
@@ -9,10 +9,10 @@ import { Button } from "@/components/ui/button";
 
 export function History({
   history,
-  setHtml,
+  setPages,
 }: {
   history: HtmlHistory[];
-  setHtml: (html: string) => void;
+  setPages: (pages: Page[]) => void;
 }) {
   return (
     <Popover>
@@ -57,7 +57,8 @@ export function History({
                   variant="sky"
                   size="xs"
                   onClick={() => {
-                    setHtml(item.html);
+                    console.log(item);
+                    setPages(item.pages);
                   }}
                 >
                   Select

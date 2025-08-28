@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { editor } from "monaco-editor";
 import Editor from "@monaco-editor/react";
@@ -22,16 +22,25 @@ import { Preview } from "@/components/editor/preview";
 import { useEditor } from "@/hooks/useEditor";
 import { AskAI } from "@/components/editor/ask-ai";
 import { DeployButton } from "./deploy-button";
-import { Project } from "@/types";
+import { Page, Project } from "@/types";
 import { SaveButton } from "./save-button";
 import { LoadProject } from "../my-projects/load-project";
 import { isTheSameHtml } from "@/lib/compare-html-diff";
+import { ListPages } from "./pages";
 
-export const AppEditor = ({ project }: { project?: Project | null }) => {
-  const [htmlStorage, , removeHtmlStorage] = useLocalStorage("html_content");
+export const AppEditor = ({
+  project,
+  pages: initialPages,
+  isNew,
+}: {
+  project?: Project | null;
+  pages?: Page[];
+  isNew?: boolean;
+}) => {
+  const [htmlStorage, , removeHtmlStorage] = useLocalStorage("pages");
   const [, copyToClipboard] = useCopyToClipboard();
-  const { html, setHtml, htmlHistory, setHtmlHistory, prompts, setPrompts } =
-    useEditor(project?.html ?? (htmlStorage as string) ?? defaultHTML);
+  const { htmlHistory, setHtmlHistory, prompts, setPrompts, pages, setPages } =
+    useEditor(initialPages);
   // get query params from URL
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -46,6 +55,7 @@ export const AppEditor = ({ project }: { project?: Project | null }) => {
   const monacoRef = useRef<any>(null);
 
   const [currentTab, setCurrentTab] = useState("chat");
+  const [currentPage, setCurrentPage] = useState("index.html");
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const [isResizing, setIsResizing] = useState(false);
   const [isAiWorking, setIsAiWorking] = useState(false);
@@ -54,11 +64,6 @@ export const AppEditor = ({ project }: { project?: Project | null }) => {
     null
   );
 
-  /**
-   * Resets the layout based on screen size
-   * - For desktop: Sets editor to 1/3 width and preview to 2/3
-   * - For mobile: Removes inline styles to let CSS handle it
-   */
   const resetLayout = () => {
     if (!editor.current || !preview.current) return;
 
@@ -78,10 +83,6 @@ export const AppEditor = ({ project }: { project?: Project | null }) => {
     }
   };
 
-  /**
-   * Handles resizing when the user drags the resizer
-   * Ensures minimum widths are maintained for both panels
-   */
   const handleResize = (e: MouseEvent) => {
     if (!editor.current || !preview.current || !resizer.current) return;
 
@@ -149,7 +150,7 @@ export const AppEditor = ({ project }: { project?: Project | null }) => {
 
   // Prevent accidental navigation away when AI is working or content has changed
   useEvent("beforeunload", (e) => {
-    if (isAiWorking || !isTheSameHtml(html)) {
+    if (isAiWorking || !isTheSameHtml(currentPageData?.html)) {
       e.preventDefault();
       return "";
     }
@@ -175,6 +176,15 @@ export const AppEditor = ({ project }: { project?: Project | null }) => {
     console.log("Editor validation markers:", markers);
   };
 
+  const currentPageData = useMemo(() => {
+    return (
+      pages.find((page) => page.path === currentPage) ?? {
+        path: "index.html",
+        html: defaultHTML,
+      }
+    );
+  }, [pages, currentPage]);
+
   return (
     <section className="h-[100dvh] bg-neutral-950 flex flex-col">
       <Header tab={currentTab} onNewTab={setCurrentTab}>
@@ -183,10 +193,11 @@ export const AppEditor = ({ project }: { project?: Project | null }) => {
             router.push(`/projects/${project.space_id}`);
           }}
         />
+        {/* for these buttons pass the whole pages */}
         {project?._id ? (
-          <SaveButton html={html} prompts={prompts} />
+          <SaveButton pages={pages} prompts={prompts} />
         ) : (
-          <DeployButton html={html} prompts={prompts} />
+          <DeployButton pages={pages} prompts={prompts} />
         )}
       </Header>
       <main className="bg-neutral-950 flex-1 max-lg:flex-col flex w-full max-lg:h-[calc(100%-82px)] relative">
@@ -196,10 +207,43 @@ export const AppEditor = ({ project }: { project?: Project | null }) => {
               ref={editor}
               className="bg-neutral-900 relative flex-1 overflow-hidden h-full flex flex-col gap-2 pb-3"
             >
+              <ListPages
+                pages={pages}
+                currentPage={currentPage}
+                onSelectPage={(path, newPath) => {
+                  if (newPath) {
+                    setPages((prev) =>
+                      prev.map((page) =>
+                        page.path === path ? { ...page, path: newPath } : page
+                      )
+                    );
+                    setCurrentPage(newPath);
+                  } else {
+                    setCurrentPage(path);
+                  }
+                }}
+                onDeletePage={(path) => {
+                  const newPages = pages.filter((page) => page.path !== path);
+                  setPages(newPages);
+                  if (currentPage === path) {
+                    setCurrentPage(newPages[0]?.path ?? "index.html");
+                  }
+                }}
+                onNewPage={() => {
+                  setPages((prev) => [
+                    ...prev,
+                    {
+                      path: `page-${prev.length + 1}.html`,
+                      html: defaultHTML,
+                    },
+                  ]);
+                  setCurrentPage(`page-${pages.length + 1}.html`);
+                }}
+              />
               <CopyIcon
-                className="size-4 absolute top-2 right-5 text-neutral-500 hover:text-neutral-300 z-2 cursor-pointer"
+                className="size-4 absolute top-14 right-5 text-neutral-500 hover:text-neutral-300 z-2 cursor-pointer"
                 onClick={() => {
-                  copyToClipboard(html);
+                  copyToClipboard(currentPageData.html);
                   toast.success("HTML copied to clipboard!");
                 }}
               />
@@ -222,10 +266,17 @@ export const AppEditor = ({ project }: { project?: Project | null }) => {
                   },
                   wordWrap: "on",
                 }}
-                value={html}
+                value={currentPageData.html}
                 onChange={(value) => {
                   const newValue = value ?? "";
-                  setHtml(newValue);
+                  // setHtml(newValue);
+                  setPages((prev) =>
+                    prev.map((page) =>
+                      page.path === currentPageData.path
+                        ? { ...page, html: newValue }
+                        : page
+                    )
+                  );
                 }}
                 onMount={(editor, monaco) => {
                   editorRef.current = editor;
@@ -234,19 +285,13 @@ export const AppEditor = ({ project }: { project?: Project | null }) => {
                 onValidate={handleEditorValidation}
               />
               <AskAI
-                html={html}
-                setHtml={(newHtml: string) => {
-                  setHtml(newHtml);
-                }}
+                currentPage={currentPageData}
                 htmlHistory={htmlHistory}
-                onSuccess={(
-                  finalHtml: string,
-                  p: string,
-                  updatedLines?: number[][]
-                ) => {
+                previousPrompts={project?.prompts ?? []}
+                onSuccess={(newPages, p: string, updatedLines?: number[][]) => {
                   const currentHistory = [...htmlHistory];
                   currentHistory.unshift({
-                    html: finalHtml,
+                    pages: newPages,
                     createdAt: new Date(),
                     prompt: p,
                   });
@@ -277,6 +322,9 @@ export const AppEditor = ({ project }: { project?: Project | null }) => {
                     }, 100);
                   }
                 }}
+                setPages={setPages}
+                pages={pages}
+                setCurrentPage={setCurrentPage}
                 isAiWorking={isAiWorking}
                 setisAiWorking={setIsAiWorking}
                 onNewPrompt={(prompt: string) => {
@@ -287,6 +335,7 @@ export const AppEditor = ({ project }: { project?: Project | null }) => {
                     editorRef.current?.getModel()?.getLineCount() ?? 0
                   );
                 }}
+                isNew={isNew}
                 isEditableModeEnabled={isEditableModeEnabled}
                 setIsEditableModeEnabled={setIsEditableModeEnabled}
                 selectedElement={selectedElement}
@@ -300,11 +349,13 @@ export const AppEditor = ({ project }: { project?: Project | null }) => {
           </>
         )}
         <Preview
-          html={html}
+          html={currentPageData?.html}
           isResizing={isResizing}
           isAiWorking={isAiWorking}
           ref={preview}
           device={device}
+          pages={pages}
+          setCurrentPage={setCurrentPage}
           currentTab={currentTab}
           isEditableModeEnabled={isEditableModeEnabled}
           iframeRef={iframeRef}
@@ -324,7 +375,7 @@ export const AppEditor = ({ project }: { project?: Project | null }) => {
           if (
             window.confirm("You're about to reset the editor. Are you sure?")
           ) {
-            setHtml(defaultHTML);
+            // setHtml(defaultHTML);
             removeHtmlStorage();
             editorRef.current?.revealLine(
               editorRef.current?.getModel()?.getLineCount() ?? 0
@@ -332,7 +383,7 @@ export const AppEditor = ({ project }: { project?: Project | null }) => {
           }
         }}
         htmlHistory={htmlHistory}
-        setHtml={setHtml}
+        setPages={setPages}
         iframeRef={iframeRef}
         device={device}
         setDevice={setDevice}

@@ -3,20 +3,21 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { CheckCheck } from "lucide-react";
 import { isTheSameHtml } from "@/lib/compare-html-diff";
+import { Page } from "@/types";
 
 export const ProModal = ({
   open,
-  html,
+  pages,
   onClose,
 }: {
   open: boolean;
-  html: string;
+  pages: Page[];
   onClose: React.Dispatch<React.SetStateAction<boolean>>;
 }) => {
-  const [, setStorage] = useLocalStorage("html_content");
+  const [, setStorage] = useLocalStorage("pages");
   const handleProClick = () => {
-    if (!isTheSameHtml(html)) {
-      setStorage(html);
+    if (pages && !isTheSameHtml(pages?.[0].html)) {
+      setStorage(pages);
     }
     window.open("https://huggingface.co/subscribe/pro?from=DeepSite", "_blank");
     onClose(false);

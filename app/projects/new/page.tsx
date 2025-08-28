@@ -1,5 +1,5 @@
 import { AppEditor } from "@/components/editor";
 
 export default function ProjectsNewPage() {
-  return <AppEditor />;
+  return <AppEditor isNew />;
 }

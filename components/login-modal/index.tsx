@@ -3,25 +3,26 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useUser } from "@/hooks/useUser";
 import { isTheSameHtml } from "@/lib/compare-html-diff";
+import { Page } from "@/types";
 
 export const LoginModal = ({
   open,
-  html,
+  pages,
   onClose,
   title = "Log In to use DeepSite for free",
   description = "Log In through your Hugging Face account to continue using DeepSite and increase your monthly free limit.",
 }: {
   open: boolean;
-  html?: string;
+  pages?: Page[];
   onClose: React.Dispatch<React.SetStateAction<boolean>>;
   title?: string;
   description?: string;
 }) => {
   const { openLoginWindow } = useUser();
-  const [, setStorage] = useLocalStorage("html_content");
+  const [, setStorage] = useLocalStorage("pages");
   const handleClick = async () => {
-    if (html && !isTheSameHtml(html)) {
-      setStorage(html);
+    if (pages && !isTheSameHtml(pages[0].html)) {
+      setStorage(pages);
     }
     openLoginWindow();
     onClose(false);

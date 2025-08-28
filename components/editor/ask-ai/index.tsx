@@ -1,6 +1,6 @@
 "use client";
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useRef, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import classNames from "classnames";
 import { toast } from "sonner";
 import { useLocalStorage, useUpdateEffect } from "react-use";
@@ -10,7 +10,7 @@ import { FaStopCircle } from "react-icons/fa";
 import ProModal from "@/components/pro-modal";
 import { Button } from "@/components/ui/button";
 import { MODELS } from "@/lib/providers";
-import { HtmlHistory } from "@/types";
+import { HtmlHistory, Page } from "@/types";
 import { InviteFriends } from "@/components/invite-friends";
 import { Settings } from "@/components/editor/ask-ai/settings";
 import { LoginModal } from "@/components/login-modal";
@@ -22,50 +22,74 @@ import { TooltipContent } from "@radix-ui/react-tooltip";
 import { SelectedHtmlElement } from "./selected-html-element";
 import { FollowUpTooltip } from "./follow-up-tooltip";
 import { isTheSameHtml } from "@/lib/compare-html-diff";
+import { useCallAi } from "@/hooks/useCallAi";
 
 export function AskAI({
-  html,
-  setHtml,
+  currentPage,
+  previousPrompts,
   onScrollToBottom,
   isAiWorking,
   setisAiWorking,
   isEditableModeEnabled = false,
+  pages,
+  htmlHistory,
   selectedElement,
   setSelectedElement,
   setIsEditableModeEnabled,
   onNewPrompt,
   onSuccess,
+  setPages,
+  setCurrentPage,
 }: {
-  html: string;
-  setHtml: (html: string) => void;
+  currentPage: Page;
+  pages: Page[];
   onScrollToBottom: () => void;
+  previousPrompts: string[];
   isAiWorking: boolean;
   onNewPrompt: (prompt: string) => void;
   htmlHistory?: HtmlHistory[];
   setisAiWorking: React.Dispatch<React.SetStateAction<boolean>>;
-  onSuccess: (h: string, p: string, n?: number[][]) => void;
+  isNew?: boolean;
+  onSuccess: (page: Page[], p: string, n?: number[][]) => void;
   isEditableModeEnabled: boolean;
   setIsEditableModeEnabled: React.Dispatch<React.SetStateAction<boolean>>;
   selectedElement?: HTMLElement | null;
   setSelectedElement: React.Dispatch<React.SetStateAction<HTMLElement | null>>;
+  setPages: React.Dispatch<React.SetStateAction<Page[]>>;
+  setCurrentPage: React.Dispatch<React.SetStateAction<string>>;
 }) {
   const refThink = useRef<HTMLDivElement | null>(null);
-  const audio = useRef<HTMLAudioElement | null>(null);
 
   const [open, setOpen] = useState(false);
   const [prompt, setPrompt] = useState("");
-  const [hasAsked, setHasAsked] = useState(false);
   const [previousPrompt, setPreviousPrompt] = useState("");
   const [provider, setProvider] = useLocalStorage("provider", "auto");
   const [model, setModel] = useLocalStorage("model", MODELS[0].value);
   const [openProvider, setOpenProvider] = useState(false);
   const [providerError, setProviderError] = useState("");
   const [openProModal, setOpenProModal] = useState(false);
-  const [think, setThink] = useState<string | undefined>(undefined);
   const [openThink, setOpenThink] = useState(false);
   const [isThinking, setIsThinking] = useState(true);
-  const [controller, setController] = useState<AbortController | null>(null);
+  const [think, setThink] = useState("");
   const [isFollowUp, setIsFollowUp] = useState(true);
+
+  const {
+    callAiNewProject,
+    callAiFollowUp,
+    callAiNewPage,
+    stopController,
+    audio: hookAudio,
+  } = useCallAi({
+    onNewPrompt,
+    onSuccess,
+    onScrollToBottom,
+    setPages,
+    setCurrentPage,
+    currentPage,
+    pages,
+    isAiWorking,
+    setisAiWorking,
+  });
 
   const selectedModel = useMemo(() => {
     return MODELS.find((m: { value: string }) => m.value === model);
@@ -74,203 +98,93 @@ export function AskAI({
   const callAi = async (redesignMarkdown?: string) => {
     if (isAiWorking) return;
     if (!redesignMarkdown && !prompt.trim()) return;
-    setisAiWorking(true);
-    setProviderError("");
-    setThink("");
-    setOpenThink(false);
-    setIsThinking(true);
 
-    let contentResponse = "";
-    let thinkResponse = "";
-    let lastRenderTime = 0;
+    if (isFollowUp && !redesignMarkdown && !isSameHtml) {
+      // Use follow-up function for existing projects
+      const selectedElementHtml = selectedElement
+        ? selectedElement.outerHTML
+        : "";
 
-    const abortController = new AbortController();
-    setController(abortController);
-    try {
-      onNewPrompt(prompt);
-      if (isFollowUp && !redesignMarkdown && !isSameHtml) {
-        const selectedElementHtml = selectedElement
-          ? selectedElement.outerHTML
-          : "";
-        const request = await fetch("/api/ask-ai", {
-          method: "PUT",
-          body: JSON.stringify({
-            prompt,
-            provider,
-            previousPrompt,
-            model,
-            html,
-            selectedElementHtml,
-          }),
-          headers: {
-            "Content-Type": "application/json",
-            "x-forwarded-for": window.location.hostname,
-          },
-          signal: abortController.signal,
-        });
-        if (request && request.body) {
-          const res = await request.json();
-          if (!request.ok) {
-            if (res.openLogin) {
-              setOpen(true);
-            } else if (res.openSelectProvider) {
-              setOpenProvider(true);
-              setProviderError(res.message);
-            } else if (res.openProModal) {
-              setOpenProModal(true);
-            } else {
-              toast.error(res.message);
-            }
-            setisAiWorking(false);
-            return;
-          }
-          setHtml(res.html);
-          toast.success("AI responded successfully");
-          setPreviousPrompt(prompt);
-          setPrompt("");
-          setisAiWorking(false);
-          onSuccess(res.html, prompt, res.updatedLines);
-          if (audio.current) audio.current.play();
-        }
-      } else {
-        const request = await fetch("/api/ask-ai", {
-          method: "POST",
-          body: JSON.stringify({
-            prompt,
-            provider,
-            model,
-            html: isSameHtml ? "" : html,
-            redesignMarkdown,
-          }),
-          headers: {
-            "Content-Type": "application/json",
-            "x-forwarded-for": window.location.hostname,
-          },
-          signal: abortController.signal,
-        });
-        if (request && request.body) {
-          const reader = request.body.getReader();
-          const decoder = new TextDecoder("utf-8");
-          const selectedModel = MODELS.find(
-            (m: { value: string }) => m.value === model
-          );
-          let contentThink: string | undefined = undefined;
-          const read = async () => {
-            const { done, value } = await reader.read();
-            if (done) {
-              const isJson =
-                contentResponse.trim().startsWith("{") &&
-                contentResponse.trim().endsWith("}");
-              const jsonResponse = isJson ? JSON.parse(contentResponse) : null;
-              if (jsonResponse && !jsonResponse.ok) {
-                if (jsonResponse.openLogin) {
-                  setOpen(true);
-                } else if (jsonResponse.openSelectProvider) {
-                  setOpenProvider(true);
-                  setProviderError(jsonResponse.message);
-                } else if (jsonResponse.openProModal) {
-                  setOpenProModal(true);
-                } else {
-                  toast.error(jsonResponse.message);
-                }
-                setisAiWorking(false);
-                return;
-              }
+      const result = await callAiFollowUp(
+        prompt,
+        previousPrompt,
+        selectedElementHtml
+      );
 
-              toast.success("AI responded successfully");
-              setPreviousPrompt(prompt);
-              setPrompt("");
-              setisAiWorking(false);
-              setHasAsked(true);
-              if (selectedModel?.isThinker) {
-                setModel(MODELS[0].value);
-              }
-              if (audio.current) audio.current.play();
-
-              // Now we have the complete HTML including </html>, so set it to be sure
-              const finalDoc = contentResponse.match(
-                /<!DOCTYPE html>[\s\S]*<\/html>/
-              )?.[0];
-              if (finalDoc) {
-                setHtml(finalDoc);
-              }
-              onSuccess(finalDoc ?? contentResponse, prompt);
-
-              return;
-            }
-
-            const chunk = decoder.decode(value, { stream: true });
-            thinkResponse += chunk;
-            if (selectedModel?.isThinker) {
-              const thinkMatch = thinkResponse.match(/<think>[\s\S]*/)?.[0];
-              if (thinkMatch && !thinkResponse?.includes("</think>")) {
-                if ((contentThink?.length ?? 0) < 3) {
-                  setOpenThink(true);
-                }
-                setThink(thinkMatch.replace("<think>", "").trim());
-                contentThink += chunk;
-                return read();
-              }
-            }
-
-            contentResponse += chunk;
-
-            const newHtml = contentResponse.match(
-              /<!DOCTYPE html>[\s\S]*/
-            )?.[0];
-            if (newHtml) {
-              setIsThinking(false);
-              let partialDoc = newHtml;
-              if (
-                partialDoc.includes("<head>") &&
-                !partialDoc.includes("</head>")
-              ) {
-                partialDoc += "\n</head>";
-              }
-              if (
-                partialDoc.includes("<body") &&
-                !partialDoc.includes("</body>")
-              ) {
-                partialDoc += "\n</body>";
-              }
-              if (!partialDoc.includes("</html>")) {
-                partialDoc += "\n</html>";
-              }
-
-              // Throttle the re-renders to avoid flashing/flicker
-              const now = Date.now();
-              if (now - lastRenderTime > 300) {
-                setHtml(partialDoc);
-                lastRenderTime = now;
-              }
-
-              if (partialDoc.length > 200) {
-                onScrollToBottom();
-              }
-            }
-            read();
-          };
-
-          read();
-        }
+      if (result?.error) {
+        handleError(result.error, result.message);
+        return;
       }
-    } catch (error: any) {
-      setisAiWorking(false);
-      toast.error(error.message);
-      if (error.openLogin) {
-        setOpen(true);
+
+      if (result?.success) {
+        setPreviousPrompt(prompt);
+        setPrompt("");
+      }
+    } else if (isFollowUp && pages.length > 1 && isSameHtml) {
+      const result = await callAiNewPage(prompt, currentPage.path, [
+        ...(previousPrompts ?? []),
+        ...(htmlHistory?.map((h) => h.prompt) ?? []),
+      ]);
+      if (result?.error) {
+        handleError(result.error, result.message);
+        return;
+      }
+
+      if (result?.success) {
+        setPreviousPrompt(prompt);
+        setPrompt("");
+      }
+    } else {
+      const result = await callAiNewProject(
+        prompt,
+        redesignMarkdown,
+        handleThink,
+        () => {
+          setIsThinking(false);
+        }
+      );
+
+      if (result?.error) {
+        handleError(result.error, result.message);
+        return;
+      }
+
+      if (result?.success) {
+        setPreviousPrompt(prompt);
+        setPrompt("");
+        if (selectedModel?.isThinker) {
+          setModel(MODELS[0].value);
+        }
       }
     }
   };
 
-  const stopController = () => {
-    if (controller) {
-      controller.abort();
-      setController(null);
-      setisAiWorking(false);
-      setThink("");
-      setOpenThink(false);
-      setIsThinking(false);
+  const handleThink = (think: string) => {
+    setThink(think);
+    setIsThinking(true);
+    setOpenThink(true);
+  };
+
+  const handleError = (error: string, message?: string) => {
+    switch (error) {
+      case "login_required":
+        setOpen(true);
+        break;
+      case "provider_required":
+        setOpenProvider(true);
+        setProviderError(message || "");
+        break;
+      case "pro_required":
+        setOpenProModal(true);
+        break;
+      case "api_error":
+        toast.error(message || "An error occurred");
+        break;
+      case "network_error":
+        toast.error(message || "Network error occurred");
+        break;
+      default:
+        toast.error("An unexpected error occurred");
     }
   };
 
@@ -287,8 +201,8 @@ export function AskAI({
   }, [isThinking]);
 
   const isSameHtml = useMemo(() => {
-    return isTheSameHtml(html);
-  }, [html]);
+    return isTheSameHtml(currentPage.html);
+  }, [currentPage.html]);
 
   return (
     <div className="px-3">
@@ -345,7 +259,8 @@ export function AskAI({
               <div className="flex items-center justify-start gap-2">
                 <Loading overlay={false} className="!size-4" />
                 <p className="text-neutral-400 text-sm">
-                  AI is {isThinking ? "thinking" : "coding"}...{" "}
+                  {/* AI is {isThinking ? "thinking" : "coding"}...{" "} */}
+                  AI is coding...
                 </p>
               </div>
               <div
@@ -357,11 +272,10 @@ export function AskAI({
               </div>
             </div>
           )}
-          <input
-            type="text"
+          <textarea
             disabled={isAiWorking}
             className={classNames(
-              "w-full bg-transparent text-sm outline-none text-white placeholder:text-neutral-400 p-4",
+              "w-full bg-transparent text-sm outline-none text-white placeholder:text-neutral-400 p-4 resize-none",
               {
                 "!pt-2.5": selectedElement && !isAiWorking,
               }
@@ -369,7 +283,7 @@ export function AskAI({
             placeholder={
               selectedElement
                 ? `Ask DeepSite about ${selectedElement.tagName.toLowerCase()}...`
-                : hasAsked
+                : isFollowUp && (!isSameHtml || pages?.length > 1)
                 ? "Ask DeepSite for edits"
                 : "Ask DeepSite anything..."
             }
@@ -434,9 +348,9 @@ export function AskAI({
             </Button>
           </div>
         </div>
-        <LoginModal open={open} onClose={() => setOpen(false)} html={html} />
+        <LoginModal open={open} onClose={() => setOpen(false)} pages={pages} />
         <ProModal
-          html={html}
+          pages={pages}
           open={openProModal}
           onClose={() => setOpenProModal(false)}
         />
@@ -462,7 +376,7 @@ export function AskAI({
           </div>
         )}
       </div>
-      <audio ref={audio} id="audio" className="hidden">
+      <audio ref={hookAudio} id="audio" className="hidden">
         <source src="/success.mp3" type="audio/mpeg" />
         Your browser does not support the audio element.
       </audio>

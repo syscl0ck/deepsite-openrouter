@@ -4,8 +4,9 @@ import { createRepo, RepoDesignation, uploadFiles } from "@huggingface/hub";
 import { isAuthenticated } from "@/lib/auth";
 import Project from "@/models/Project";
 import dbConnect from "@/lib/mongodb";
-import { COLORS, getPTag } from "@/lib/utils";
-// import type user
+import { COLORS } from "@/lib/utils";
+import { Page } from "@/types";
+
 export async function GET() {
   const user = await isAuthenticated();
 
@@ -39,10 +40,6 @@ export async function GET() {
   );
 }
 
-/**
- * This API route creates a new project in Hugging Face Spaces.
- * It requires an Authorization header with a valid token and a JSON body with the project details.
- */
 export async function POST(request: NextRequest) {
   const user = await isAuthenticated();
 
@@ -50,9 +47,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
-  const { title, html, prompts } = await request.json();
+  const { title, pages, prompts } = await request.json();
 
-  if (!title || !html) {
+  if (!title || !pages || pages.length === 0) {
     return NextResponse.json(
       { message: "Title and HTML content are required.", ok: false },
       { status: 400 }
@@ -63,7 +60,6 @@ export async function POST(request: NextRequest) {
 
   try {
     let readme = "";
-    let newHtml = html;
 
     const newTitle = title
       .toLowerCase()
@@ -97,12 +93,14 @@ tags:
 
 Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference`;
 
-    newHtml = html.replace(/<\/body>/, `${getPTag(repo.name)}</body>`);
-    const file = new File([newHtml], "index.html", { type: "text/html" });
     const readmeFile = new File([readme], "README.md", {
       type: "text/markdown",
     });
-    const files = [file, readmeFile];
+    const files = [readmeFile];
+    pages.forEach((page: Page) => {
+      const file = new File([page.html], page.path, { type: "text/html" });
+      files.push(file);
+    });
     await uploadFiles({
       repo,
       files,

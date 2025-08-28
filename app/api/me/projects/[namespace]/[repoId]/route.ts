@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { RepoDesignation, spaceInfo, uploadFile } from "@huggingface/hub";
+import { RepoDesignation, spaceInfo, uploadFiles, listFiles } from "@huggingface/hub";
 
 import { isAuthenticated } from "@/lib/auth";
 import Project from "@/models/Project";
 import dbConnect from "@/lib/mongodb";
-import { getPTag } from "@/lib/utils";
+import { Page } from "@/types";
 
 export async function GET(
   req: NextRequest,
@@ -33,7 +33,6 @@ export async function GET(
       { status: 404 }
     );
   }
-  const space_url = `https://huggingface.co/spaces/${namespace}/${repoId}/raw/main/index.html`;
   try {
     const space = await spaceInfo({
       name: namespace + "/" + repoId,
@@ -60,25 +59,41 @@ export async function GET(
       );
     }
 
-    const response = await fetch(space_url);
-    if (!response.ok) {
+    const repo: RepoDesignation = {
+      type: "space",
+      name: `${namespace}/${repoId}`,
+    };
+
+    const htmlFiles: Page[] = [];
+    
+    for await (const fileInfo of listFiles({repo, accessToken: user.token as string})) {
+      if (fileInfo.path.endsWith(".html")) {
+        const res = await fetch(`https://huggingface.co/spaces/${namespace}/${repoId}/raw/main/${fileInfo.path}`);
+        if (res.ok) {
+          const html = await res.text();
+          htmlFiles.push({
+            path: fileInfo.path,
+            html,
+          });
+        }
+      }
+    }
+
+    if (htmlFiles.length === 0) {
       return NextResponse.json(
         {
           ok: false,
-          error: "Failed to fetch space HTML",
+          error: "No HTML files found",
         },
         { status: 404 }
       );
     }
-    let html = await response.text();
-    // remove the last p tag including this url https://enzostvs-deepsite.hf.space
-    html = html.replace(getPTag(namespace + "/" + repoId), "");
 
     return NextResponse.json(
       {
         project: {
           ...project,
-          html,
+          pages: htmlFiles,
         },
         ok: true,
       },
@@ -117,7 +132,7 @@ export async function PUT(
   await dbConnect();
   const param = await params;
   const { namespace, repoId } = param;
-  const { html, prompts } = await req.json();
+  const { pages, prompts } = await req.json();
 
   const project = await Project.findOne({
     user_id: user.id,
@@ -138,11 +153,14 @@ export async function PUT(
     name: `${namespace}/${repoId}`,
   };
 
-  const newHtml = html.replace(/<\/body>/, `${getPTag(repo.name)}</body>`);
-  const file = new File([newHtml], "index.html", { type: "text/html" });
-  await uploadFile({
+  const files: File[] = [];
+  pages.forEach((page: Page) => {
+    const file = new File([page.html], page.path, { type: "text/html" });
+    files.push(file);
+  });
+  await uploadFiles({
     repo,
-    file,
+    files,
     accessToken: user.token as string,
     commitTitle: `${prompts[prompts.length - 1]} - Follow Up Deployment`,
   });

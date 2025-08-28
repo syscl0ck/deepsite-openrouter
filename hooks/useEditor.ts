@@ -1,12 +1,18 @@
-import { HtmlHistory } from "@/types";
+import { defaultHTML } from "@/lib/consts";
+import { HtmlHistory, Page } from "@/types";
 import { useState } from "react";
 
-export const useEditor = (defaultHtml: string) => {
+export const useEditor = (initialPages?: Page[]) => {
   /**
    * State to manage the HTML content of the editor.
    * This will be the main content that users edit.
    */
-  const [html, setHtml] = useState(defaultHtml);
+  const [pages, setPages] = useState<Array<Page>>(initialPages ??[
+    {
+      path: "index.html",
+      html: defaultHTML,
+    },
+  ]);
   /**
    * State to manage the history of HTML edits.
    * This will store previous versions of the HTML content along with metadata. (not saved to DB)
@@ -19,12 +25,13 @@ export const useEditor = (defaultHtml: string) => {
    */
   const [prompts, setPrompts] = useState<string[]>([]);
 
+
   return {
-    html,
-    setHtml,
     htmlHistory,
     setHtmlHistory,
     prompts,
+    pages,
+    setPages,
     setPrompts,
   };
 };

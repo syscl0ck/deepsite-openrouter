@@ -2,7 +2,7 @@ import classNames from "classnames";
 import { FaMobileAlt } from "react-icons/fa";
 import { HelpCircle, RefreshCcw, SparkleIcon } from "lucide-react";
 import { FaLaptopCode } from "react-icons/fa6";
-import { HtmlHistory } from "@/types";
+import { HtmlHistory, Page } from "@/types";
 import { Button } from "@/components/ui/button";
 import { MdAdd } from "react-icons/md";
 import { History } from "@/components/editor/history";
@@ -23,7 +23,7 @@ const DEVICES = [
 export function Footer({
   onReset,
   htmlHistory,
-  setHtml,
+  setPages,
   device,
   setDevice,
   iframeRef,
@@ -31,7 +31,7 @@ export function Footer({
   onReset: () => void;
   htmlHistory?: HtmlHistory[];
   device: "desktop" | "mobile";
-  setHtml: (html: string) => void;
+  setPages: (pages: Page[]) => void;
   iframeRef?: React.RefObject<HTMLIFrameElement | null>;
   setDevice: React.Dispatch<React.SetStateAction<"desktop" | "mobile">>;
 }) {
@@ -69,7 +69,7 @@ export function Footer({
         {htmlHistory && htmlHistory.length > 0 && (
           <>
             <p className="text-neutral-700">|</p>
-            <History history={htmlHistory} setHtml={setHtml} />
+            <History history={htmlHistory} setPages={setPages} />
           </>
         )}
       </div>

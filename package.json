@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@codesandbox/sandpack-react": "^2.20.0",
     "@huggingface/hub": "^2.2.0",
     "@huggingface/inference": "^4.0.3",
     "@monaco-editor/react": "^4.7.0-rc.0",

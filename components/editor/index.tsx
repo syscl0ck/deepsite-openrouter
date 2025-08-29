@@ -12,6 +12,7 @@ import {
   useUnmount,
   useUpdateEffect,
 } from "react-use";
+import { SandpackPreviewRef } from "@codesandbox/sandpack-react";
 import classNames from "classnames";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -46,7 +47,7 @@ export const AppEditor = ({
   const router = useRouter();
   const deploy = searchParams.get("deploy") === "true";
 
-  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const iframeRef = useRef<SandpackPreviewRef>(null);
   const preview = useRef<HTMLDivElement>(null);
   const editor = useRef<HTMLDivElement>(null);
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);

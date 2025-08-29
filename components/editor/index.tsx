@@ -12,7 +12,6 @@ import {
   useUnmount,
   useUpdateEffect,
 } from "react-use";
-import { SandpackPreviewRef } from "@codesandbox/sandpack-react";
 import classNames from "classnames";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -47,7 +46,7 @@ export const AppEditor = ({
   const router = useRouter();
   const deploy = searchParams.get("deploy") === "true";
 
-  const iframeRef = useRef<SandpackPreviewRef>(null);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const preview = useRef<HTMLDivElement>(null);
   const editor = useRef<HTMLDivElement>(null);
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
@@ -356,7 +355,6 @@ export const AppEditor = ({
           ref={preview}
           device={device}
           pages={pages}
-          currentPage={currentPage}
           setCurrentPage={setCurrentPage}
           currentTab={currentTab}
           isEditableModeEnabled={isEditableModeEnabled}
@@ -386,7 +384,7 @@ export const AppEditor = ({
         }}
         htmlHistory={htmlHistory}
         setPages={setPages}
-        // iframeRef={iframeRef}
+        iframeRef={iframeRef}
         device={device}
         setDevice={setDevice}
       />

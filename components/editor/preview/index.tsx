@@ -3,13 +3,7 @@ import { useUpdateEffect } from "react-use";
 import { useMemo, useState } from "react";
 import classNames from "classnames";
 import { toast } from "sonner";
-import {
-  SandpackLayout,
-  SandpackPreview,
-  SandpackPreviewRef,
-  SandpackProvider,
-  useSandpack,
-} from "@codesandbox/sandpack-react";
+import { useThrottleFn } from "react-use";
 
 import { cn } from "@/lib/utils";
 import { GridPattern } from "@/components/magic-ui/grid-pattern";
@@ -17,7 +11,7 @@ import { htmlTagToText } from "@/lib/html-tag-to-text";
 import { Page } from "@/types";
 
 export const Preview = ({
-  // html,
+  html,
   isResizing,
   isAiWorking,
   ref,
@@ -25,87 +19,126 @@ export const Preview = ({
   currentTab,
   iframeRef,
   pages,
-  currentPage,
-  // setCurrentPage,
+  setCurrentPage,
   isEditableModeEnabled,
-}: // onClickElement,
-{
+  onClickElement,
+}: {
   html: string;
   isResizing: boolean;
   isAiWorking: boolean;
   pages: Page[];
-  currentPage: string;
   setCurrentPage: React.Dispatch<React.SetStateAction<string>>;
   ref: React.RefObject<HTMLDivElement | null>;
-  iframeRef?: React.RefObject<SandpackPreviewRef | null>;
+  iframeRef?: React.RefObject<HTMLIFrameElement | null>;
   device: "desktop" | "mobile";
   currentTab: string;
   isEditableModeEnabled?: boolean;
   onClickElement?: (element: HTMLElement) => void;
 }) => {
-  const [hoveredElement] = useState<HTMLElement | null>(null);
+  const [hoveredElement, setHoveredElement] = useState<HTMLElement | null>(
+    null
+  );
 
-  // add event listener to the iframe to track hovered elements
-  // const handleMouseOver = (event: MouseEvent) => {
-  //   if (iframeRef?.current) {
-  //     const iframeDocument = iframeRef.current.querySelector("iframe");
-  //     if (iframeDocument) {
-  //       const targetElement = event.target as HTMLElement;
-  //       const iframeEl = iframeDocument as HTMLIFrameElement;
-  //       const iframeBody = iframeEl.contentDocument?.body;
-  //       if (hoveredElement !== targetElement && targetElement !== iframeBody) {
-  //         setHoveredElement(targetElement);
-  //         targetElement.classList.add("hovered-element");
-  //       } else {
-  //         return setHoveredElement(null);
-  //       }
-  //     }
-  //   }
-  // };
-  // const handleMouseOut = () => {
-  //   setHoveredElement(null);
-  // };
-  // const handleClick = (event: MouseEvent) => {
-  // if (iframeRef?.current) {
-  //   const iframeDocument = iframeRef.current.querySelector("iframe");
-  //   if (iframeDocument) {
-  //     const targetElement = event.target as HTMLElement;
-  //     const iframeEl = iframeDocument as HTMLIFrameElement;
-  //     const iframeBody = iframeEl.contentDocument?.body;
-  //     if (targetElement !== iframeBody) {
-  //       onClickElement?.(targetElement);
-  //     }
-  //   }
-  // }
-  // };
+  const handleMouseOver = (event: MouseEvent) => {
+    if (iframeRef?.current) {
+      const iframeDocument = iframeRef.current.contentDocument;
+      if (iframeDocument) {
+        const targetElement = event.target as HTMLElement;
+        if (
+          hoveredElement !== targetElement &&
+          targetElement !== iframeDocument.body
+        ) {
+          setHoveredElement(targetElement);
+          targetElement.classList.add("hovered-element");
+        } else {
+          return setHoveredElement(null);
+        }
+      }
+    }
+  };
+  const handleMouseOut = () => {
+    setHoveredElement(null);
+  };
+  const handleClick = (event: MouseEvent) => {
+    if (iframeRef?.current) {
+      const iframeDocument = iframeRef.current.contentDocument;
+      if (iframeDocument) {
+        const targetElement = event.target as HTMLElement;
+        if (targetElement !== iframeDocument.body) {
+          onClickElement?.(targetElement);
+        }
+      }
+    }
+  };
+  const handleCustomNavigation = (event: MouseEvent) => {
+    if (iframeRef?.current) {
+      const iframeDocument = iframeRef.current.contentDocument;
+      if (iframeDocument) {
+        const findClosestAnchor = (
+          element: HTMLElement
+        ): HTMLAnchorElement | null => {
+          let current = element;
+          while (current && current !== iframeDocument.body) {
+            if (current.tagName === "A") {
+              return current as HTMLAnchorElement;
+            }
+            current = current.parentElement as HTMLElement;
+          }
+          return null;
+        };
 
-  // useUpdateEffect(() => {
-  //   const cleanupListeners = () => {
-  //     if (iframeRef?.current) {
-  //       const iframeDocument = iframeRef.current.querySelector("iframe");
-  //       if (iframeDocument) {
-  //         iframeDocument.removeEventListener("mouseover", handleMouseOver);
-  //         iframeDocument.removeEventListener("mouseout", handleMouseOut);
-  //         iframeDocument.removeEventListener("click", handleClick);
-  //       }
-  //     }
-  //   };
+        const anchorElement = findClosestAnchor(event.target as HTMLElement);
 
-  //   if (iframeRef?.current) {
-  //     const iframeDocument = iframeRef.current.querySelector("iframe");
-  //     if (iframeDocument) {
-  //       cleanupListeners();
+        if (anchorElement) {
+          let href = anchorElement.getAttribute("href");
+          if (href) {
+            event.stopPropagation();
+            event.preventDefault();
 
-  //       if (isEditableModeEnabled) {
-  //         iframeDocument.addEventListener("mouseover", handleMouseOver);
-  //         iframeDocument.addEventListener("mouseout", handleMouseOut);
-  //         iframeDocument.addEventListener("click", handleClick);
-  //       }
-  //     }
-  //   }
+            if (href.includes("#") && !href.includes(".html")) {
+              const targetElement = iframeDocument.querySelector(href);
+              if (targetElement) {
+                targetElement.scrollIntoView({ behavior: "smooth" });
+              }
+              return;
+            }
 
-  //   return cleanupListeners;
-  // }, [iframeRef, isEditableModeEnabled]);
+            href = href.split(".html")[0] + ".html";
+            const isPageExist = pages.some((page) => page.path === href);
+            if (isPageExist) {
+              setCurrentPage(href);
+            }
+          }
+        }
+      }
+    }
+  };
+
+  useUpdateEffect(() => {
+    const cleanupListeners = () => {
+      if (iframeRef?.current?.contentDocument) {
+        const iframeDocument = iframeRef.current.contentDocument;
+        iframeDocument.removeEventListener("mouseover", handleMouseOver);
+        iframeDocument.removeEventListener("mouseout", handleMouseOut);
+        iframeDocument.removeEventListener("click", handleClick);
+      }
+    };
+
+    if (iframeRef?.current) {
+      const iframeDocument = iframeRef.current.contentDocument;
+      if (iframeDocument) {
+        cleanupListeners();
+
+        if (isEditableModeEnabled) {
+          iframeDocument.addEventListener("mouseover", handleMouseOver);
+          iframeDocument.addEventListener("mouseout", handleMouseOut);
+          iframeDocument.addEventListener("click", handleClick);
+        }
+      }
+    }
+
+    return cleanupListeners;
+  }, [iframeRef, isEditableModeEnabled]);
 
   const selectedElement = useMemo(() => {
     if (!isEditableModeEnabled) return null;
@@ -113,12 +146,7 @@ export const Preview = ({
     return hoveredElement;
   }, [hoveredElement, isEditableModeEnabled]);
 
-  const formattedPages = useMemo(() => {
-    return pages.reduce((acc, page) => {
-      acc[page.path] = page.html;
-      return acc;
-    }, {} as Record<string, string>);
-  }, [pages]);
+  const throttledHtml = useThrottleFn((html) => html, 1000, [html]);
 
   return (
     <div
@@ -166,11 +194,12 @@ export const Preview = ({
           </span>
         </div>
       )}
-      <div
+      <iframe
         id="preview-iframe"
+        ref={iframeRef}
         title="output"
         className={classNames(
-          "w-full select-none transition-all duration-200 bg-black h-full overflow-hidden",
+          "w-full select-none transition-all duration-200 bg-black h-full",
           {
             "pointer-events-none": isResizing || isAiWorking,
             "lg:max-w-md lg:mx-auto lg:!rounded-[42px] lg:border-[8px] lg:border-neutral-700 lg:shadow-2xl lg:h-[80dvh] lg:max-h-[996px]":
@@ -179,56 +208,25 @@ export const Preview = ({
               currentTab !== "preview" && device === "desktop",
           }
         )}
-      >
-        <SandpackProvider
-          template="static"
-          options={{
-            classes: {
-              "sp-wrapper": "!w-full !h-full",
-              "sp-layout": "!w-full !h-full",
-              "sp-stack": "!w-full !h-full",
-            },
-            activeFile: currentPage,
-          }}
-          files={formattedPages}
-        >
-          <SandpackLayout>
-            <SandpackPreviewClient ref={iframeRef!} />
-          </SandpackLayout>
-        </SandpackProvider>
-      </div>
+        srcDoc={throttledHtml as string}
+        onLoad={() => {
+          if (iframeRef?.current?.contentWindow?.document?.body) {
+            iframeRef.current.contentWindow.document.body.scrollIntoView({
+              block: isAiWorking ? "end" : "start",
+              inline: "nearest",
+              behavior: isAiWorking ? "instant" : "smooth",
+            });
+          }
+          // add event listener to all links in the iframe to handle navigation
+          if (iframeRef?.current?.contentWindow?.document) {
+            const links =
+              iframeRef.current.contentWindow.document.querySelectorAll("a");
+            links.forEach((link) => {
+              link.addEventListener("click", handleCustomNavigation);
+            });
+          }
+        }}
+      />
     </div>
-  );
-};
-
-const SandpackPreviewClient = ({
-  ref,
-}: {
-  ref: React.RefObject<SandpackPreviewRef | null>;
-}) => {
-  const { sandpack } = useSandpack();
-
-  useUpdateEffect(() => {
-    const client = ref.current?.getClient();
-    const clientId = ref.current?.clientId;
-
-    if (client && clientId) {
-      // console.log({ client });
-      // console.log(sandpack.clients[clientId]);
-      // const iframe = client.iframe;
-      // console.log(iframe.contentWindow);
-    }
-    /**
-     * NOTE: In order to make sure that the client will be available
-     * use the whole `sandpack` object as a dependency.
-     */
-  }, [sandpack]);
-
-  return (
-    <SandpackPreview
-      ref={ref}
-      showRefreshButton={false}
-      showOpenInCodeSandbox={false}
-    />
   );
 };

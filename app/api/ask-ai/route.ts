@@ -197,10 +197,10 @@ export async function PUT(request: NextRequest) {
   const userToken = request.cookies.get(MY_TOKEN_KEY())?.value;
 
   const body = await request.json();
-  const { prompt, html, previousPrompt, provider, selectedElementHtml, model, pages } =
+  const { prompt, previousPrompt, provider, selectedElementHtml, model, pages } =
     body;
 
-  if (!prompt || !html) {
+  if (!prompt || pages.length === 0) {
     return NextResponse.json(
       { ok: false, error: "Missing required fields" },
       { status: 400 }
@@ -277,11 +277,11 @@ export async function PUT(request: NextRequest) {
           {
             role: "assistant",
 
-            content: `The current code is: \n\`\`\`html\n${html}\n\`\`\` ${
+            content: `${
               selectedElementHtml
                 ? `\n\nYou have to update ONLY the following element, NOTHING ELSE: \n\n\`\`\`html\n${selectedElementHtml}\n\`\`\``
                 : ""
-            }. Also here are the current pages: ${pages?.map((p: Page) => `- ${p.path} \n${p.html}`).join("\n")}.`,
+            }. Current pages: ${pages?.map((p: Page) => `- ${p.path} \n${p.html}`).join("\n")}.`,
           },
           {
             role: "user",
@@ -307,7 +307,7 @@ export async function PUT(request: NextRequest) {
 
     if (chunk) {
       const updatedLines: number[][] = [];
-      let newHtml = html;
+      let newHtml = "";
       const updatedPages = [...(pages || [])];
 
       const updatePageRegex = new RegExp(`${UPDATE_PAGE_START.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([^\\s]+)\\s*${UPDATE_PAGE_END.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([\\s\\S]*?)(?=${UPDATE_PAGE_START.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}|${NEW_PAGE_START.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}|$)`, 'g');

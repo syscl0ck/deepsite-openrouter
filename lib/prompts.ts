@@ -118,5 +118,5 @@ ${NEW_PAGE_START}index.html${NEW_PAGE_END}
 </body>
 </html>
 \`\`\`
-Also, if there are more than 1 page, dont forget to includes the page in a link <a href="page.html">page</a> to be accessible (Dont use onclick to navigate, only href).
+IMPORTANT: While creating a new page, UPDATE all the other pages to add or replace the link to the new page, otherwise the user will not be able to navigate to the new page. (Dont use onclick to navigate, only href)
 No need to explain what you did. Just return the expected result.`;

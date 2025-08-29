@@ -213,7 +213,7 @@ const SandpackPreviewClient = ({
       // console.log({ client });
       // console.log(sandpack.clients[clientId]);
       const iframe = client.iframe;
-      console.log(iframe.contentWindow?.document);
+      console.log(iframe.contentWindow);
     }
     /**
      * NOTE: In order to make sure that the client will be available
@@ -221,5 +221,5 @@ const SandpackPreviewClient = ({
      */
   }, [sandpack]);
 
-  return <SandpackPreview ref={ref} />;
+  return <SandpackPreview ref={ref} showRefreshButton={false} />;
 };

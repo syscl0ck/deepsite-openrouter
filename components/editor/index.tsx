@@ -289,7 +289,7 @@ export const AppEditor = ({
                 currentPage={currentPageData}
                 htmlHistory={htmlHistory}
                 previousPrompts={project?.prompts ?? []}
-                onSuccess={(newPages, p: string, updatedLines?: number[][]) => {
+                onSuccess={(newPages, p: string) => {
                   const currentHistory = [...htmlHistory];
                   currentHistory.unshift({
                     pages: newPages,
@@ -302,26 +302,26 @@ export const AppEditor = ({
                   if (window.innerWidth <= 1024) {
                     setCurrentTab("preview");
                   }
-                  if (updatedLines && updatedLines?.length > 0) {
-                    const decorations = updatedLines.map((line) => ({
-                      range: new monacoRef.current.Range(
-                        line[0],
-                        1,
-                        line[1],
-                        1
-                      ),
-                      options: {
-                        inlineClassName: "matched-line",
-                      },
-                    }));
-                    setTimeout(() => {
-                      editorRef?.current
-                        ?.getModel()
-                        ?.deltaDecorations([], decorations);
+                  // if (updatedLines && updatedLines?.length > 0) {
+                  //   const decorations = updatedLines.map((line) => ({
+                  //     range: new monacoRef.current.Range(
+                  //       line[0],
+                  //       1,
+                  //       line[1],
+                  //       1
+                  //     ),
+                  //     options: {
+                  //       inlineClassName: "matched-line",
+                  //     },
+                  //   }));
+                  //   setTimeout(() => {
+                  //     editorRef?.current
+                  //       ?.getModel()
+                  //       ?.deltaDecorations([], decorations);
 
-                      editorRef.current?.revealLine(updatedLines[0][0]);
-                    }, 100);
-                  }
+                  //     editorRef.current?.revealLine(updatedLines[0][0]);
+                  //   }, 100);
+                  // }
                 }}
                 setPages={setPages}
                 pages={pages}

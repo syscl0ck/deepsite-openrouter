@@ -25,6 +25,7 @@ export const Preview = ({
   currentTab,
   iframeRef,
   pages,
+  currentPage,
   // setCurrentPage,
   isEditableModeEnabled,
 }: // onClickElement,
@@ -33,6 +34,7 @@ export const Preview = ({
   isResizing: boolean;
   isAiWorking: boolean;
   pages: Page[];
+  currentPage: string;
   setCurrentPage: React.Dispatch<React.SetStateAction<string>>;
   ref: React.RefObject<HTMLDivElement | null>;
   iframeRef?: React.RefObject<SandpackPreviewRef | null>;
@@ -186,6 +188,7 @@ export const Preview = ({
               "sp-layout": "!w-full !h-full",
               "sp-stack": "!w-full !h-full",
             },
+            activeFile: currentPage,
           }}
           files={formattedPages}
         >
@@ -212,8 +215,8 @@ const SandpackPreviewClient = ({
     if (client && clientId) {
       // console.log({ client });
       // console.log(sandpack.clients[clientId]);
-      const iframe = client.iframe;
-      console.log(iframe.contentWindow);
+      // const iframe = client.iframe;
+      // console.log(iframe.contentWindow);
     }
     /**
      * NOTE: In order to make sure that the client will be available
@@ -221,5 +224,11 @@ const SandpackPreviewClient = ({
      */
   }, [sandpack]);
 
-  return <SandpackPreview ref={ref} showRefreshButton={false} />;
+  return (
+    <SandpackPreview
+      ref={ref}
+      showRefreshButton={false}
+      showOpenInCodeSandbox={false}
+    />
+  );
 };

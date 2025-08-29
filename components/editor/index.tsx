@@ -356,6 +356,7 @@ export const AppEditor = ({
           ref={preview}
           device={device}
           pages={pages}
+          currentPage={currentPage}
           setCurrentPage={setCurrentPage}
           currentTab={currentTab}
           isEditableModeEnabled={isEditableModeEnabled}

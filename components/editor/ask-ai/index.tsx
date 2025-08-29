@@ -107,6 +107,8 @@ export function AskAI({
 
       const result = await callAiFollowUp(
         prompt,
+        model,
+        provider,
         previousPrompt,
         selectedElementHtml
       );
@@ -121,10 +123,16 @@ export function AskAI({
         setPrompt("");
       }
     } else if (isFollowUp && pages.length > 1 && isSameHtml) {
-      const result = await callAiNewPage(prompt, currentPage.path, [
-        ...(previousPrompts ?? []),
-        ...(htmlHistory?.map((h) => h.prompt) ?? []),
-      ]);
+      const result = await callAiNewPage(
+        prompt,
+        model,
+        provider,
+        currentPage.path,
+        [
+          ...(previousPrompts ?? []),
+          ...(htmlHistory?.map((h) => h.prompt) ?? []),
+        ]
+      );
       if (result?.error) {
         handleError(result.error, result.message);
         return;
@@ -137,6 +145,8 @@ export function AskAI({
     } else {
       const result = await callAiNewProject(
         prompt,
+        model,
+        provider,
         redesignMarkdown,
         handleThink,
         () => {

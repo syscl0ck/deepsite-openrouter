@@ -1,6 +1,5 @@
 import { useState, useRef } from "react";
 import { toast } from "sonner";
-import { useLocalStorage } from "react-use";
 import { MODELS } from "@/lib/providers";
 import { Page } from "@/types";
 
@@ -27,11 +26,9 @@ export const useCallAi = ({
   setisAiWorking,
 }: UseCallAiProps) => {
   const audio = useRef<HTMLAudioElement | null>(null);
-  const [provider] = useLocalStorage("provider", "auto");
-  const [model] = useLocalStorage("model", MODELS[0].value);
   const [controller, setController] = useState<AbortController | null>(null);
 
-  const callAiNewProject = async (prompt: string, redesignMarkdown?: string, handleThink?: (think: string) => void, onFinishThink?: () => void) => {
+  const callAiNewProject = async (prompt: string, model: string | undefined, provider: string | undefined, redesignMarkdown?: string, handleThink?: (think: string) => void, onFinishThink?: () => void) => {
     if (isAiWorking) return;
     if (!redesignMarkdown && !prompt.trim()) return;
     
@@ -134,7 +131,7 @@ export const useCallAi = ({
     }
   };
 
-  const callAiNewPage = async (prompt: string, currentPagePath: string, previousPrompts?: string[]) => {
+  const callAiNewPage = async (prompt: string, model: string | undefined, provider: string | undefined, currentPagePath: string, previousPrompts?: string[]) => {
     if (isAiWorking) return;
     if (!prompt.trim()) return;
     
@@ -240,7 +237,7 @@ export const useCallAi = ({
     }
   };
 
-  const callAiFollowUp = async (prompt: string, previousPrompt: string, selectedElementHtml?: string) => {
+  const callAiFollowUp = async (prompt: string, model: string | undefined, provider: string | undefined, previousPrompt: string, selectedElementHtml?: string) => {
     if (isAiWorking) return;
     if (!prompt.trim()) return;
     

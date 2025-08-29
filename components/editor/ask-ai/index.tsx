@@ -4,7 +4,7 @@ import { useState, useMemo, useRef } from "react";
 import classNames from "classnames";
 import { toast } from "sonner";
 import { useLocalStorage, useUpdateEffect } from "react-use";
-import { ArrowUp, ChevronDown, Crosshair } from "lucide-react";
+import { ArrowUp, ChevronDown, Crosshair, X } from "lucide-react";
 import { FaStopCircle } from "react-icons/fa";
 
 import ProModal from "@/components/pro-modal";
@@ -264,6 +264,16 @@ export function AskAI({
           </div>
         )}
         <div className="w-full relative flex items-center justify-between">
+          {pages.length === 1 && (
+            <div className="border border-sky-500/20 bg-sky-500/10 text-sky-500 pl-2 pr-4 py-1.5 text-xs rounded-full absolute top-0 -translate-y-[calc(100%+8px)] left-0 max-w-max z-10 flex items-center justify-start gap-2">
+              <span className="rounded-full text-[10px] font-semibold bg-white text-neutral-900 px-1.5 py-0.5">
+                NEW
+              </span>
+              <p className="text-sm">
+                DeepSite can now create multiple pages at once. Try it!
+              </p>
+            </div>
+          )}
           {isAiWorking && (
             <div className="absolute bg-neutral-800 rounded-lg top-0 left-4 w-[calc(100%-30px)] h-full z-1 flex items-start pt-3.5 justify-between max-lg:text-sm">
               <div className="flex items-center justify-start gap-2">

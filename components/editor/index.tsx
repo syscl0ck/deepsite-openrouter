@@ -385,7 +385,7 @@ export const AppEditor = ({
         }}
         htmlHistory={htmlHistory}
         setPages={setPages}
-        iframeRef={iframeRef}
+        // iframeRef={iframeRef}
         device={device}
         setDevice={setDevice}
       />

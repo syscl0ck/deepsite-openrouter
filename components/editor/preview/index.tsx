@@ -17,7 +17,7 @@ import { htmlTagToText } from "@/lib/html-tag-to-text";
 import { Page } from "@/types";
 
 export const Preview = ({
-  html,
+  // html,
   isResizing,
   isAiWorking,
   ref,
@@ -25,10 +25,10 @@ export const Preview = ({
   currentTab,
   iframeRef,
   pages,
-  setCurrentPage,
+  // setCurrentPage,
   isEditableModeEnabled,
-  onClickElement,
-}: {
+}: // onClickElement,
+{
   html: string;
   isResizing: boolean;
   isAiWorking: boolean;
@@ -41,9 +41,7 @@ export const Preview = ({
   isEditableModeEnabled?: boolean;
   onClickElement?: (element: HTMLElement) => void;
 }) => {
-  const [hoveredElement, setHoveredElement] = useState<HTMLElement | null>(
-    null
-  );
+  const [hoveredElement] = useState<HTMLElement | null>(null);
 
   // add event listener to the iframe to track hovered elements
   // const handleMouseOver = (event: MouseEvent) => {

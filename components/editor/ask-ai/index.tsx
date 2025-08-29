@@ -255,12 +255,11 @@ export function AskAI({
         )}
         <div className="w-full relative flex items-center justify-between">
           {isAiWorking && (
-            <div className="absolute bg-neutral-800 rounded-lg bottom-0 left-4 w-[calc(100%-30px)] h-full z-1 flex items-center justify-between max-lg:text-sm">
+            <div className="absolute bg-neutral-800 rounded-lg top-0 left-4 w-[calc(100%-30px)] h-full z-1 flex items-start pt-3.5 justify-between max-lg:text-sm">
               <div className="flex items-center justify-start gap-2">
                 <Loading overlay={false} className="!size-4" />
                 <p className="text-neutral-400 text-sm">
-                  {/* AI is {isThinking ? "thinking" : "coding"}...{" "} */}
-                  AI is coding...
+                  AI is {isThinking ? "thinking" : "coding"}...{" "}
                 </p>
               </div>
               <div

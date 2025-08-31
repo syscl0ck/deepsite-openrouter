@@ -264,16 +264,6 @@ export function AskAI({
           </div>
         )}
         <div className="w-full relative flex items-center justify-between">
-          {pages.length === 1 && (
-            <div className="border border-sky-500/20 bg-sky-500/10 text-sky-500 pl-2 pr-4 py-1.5 text-xs rounded-full absolute top-0 -translate-y-[calc(100%+8px)] left-0 max-w-max z-10 flex items-center justify-start gap-2">
-              <span className="rounded-full text-[10px] font-semibold bg-white text-neutral-900 px-1.5 py-0.5">
-                NEW
-              </span>
-              <p className="text-sm">
-                DeepSite can now create multiple pages at once. Try it!
-              </p>
-            </div>
-          )}
           {isAiWorking && (
             <div className="absolute bg-neutral-800 rounded-lg top-0 left-4 w-[calc(100%-30px)] h-full z-1 flex items-start pt-3.5 justify-between max-lg:text-sm">
               <div className="flex items-center justify-start gap-2">
@@ -315,7 +305,7 @@ export function AskAI({
             }}
           />
         </div>
-        <div className="flex items-center justify-between gap-2 px-4 pb-3">
+        <div className="flex items-center justify-between gap-2 px-4 pb-3 mt-2">
           <div className="flex-1 flex items-center justify-start gap-1.5">
             <ReImagine onRedesign={(md) => callAi(md)} />
             {!isSameHtml && (
@@ -373,6 +363,16 @@ export function AskAI({
           open={openProModal}
           onClose={() => setOpenProModal(false)}
         />
+        {pages.length === 1 && (
+          <div className="border border-sky-500/20 bg-sky-500/20 text-sky-500 pl-2 pr-4 py-1.5 text-xs rounded-full absolute top-0 -translate-y-[calc(100%+8px)] left-0 max-w-max flex items-center justify-start gap-2">
+            <span className="rounded-full text-[10px] font-semibold bg-white text-neutral-900 px-1.5 py-0.5">
+              NEW
+            </span>
+            <p className="text-sm text-neutral-100">
+              DeepSite can now create multiple pages at once. Try it!
+            </p>
+          </div>
+        )}
         {!isSameHtml && (
           <div className="absolute top-0 right-0 -translate-y-[calc(100%+8px)] select-none text-xs text-neutral-400 flex items-center justify-center gap-2 bg-neutral-800 border border-neutral-700 rounded-md p-1 pr-2.5">
             <label

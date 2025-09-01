@@ -10,6 +10,7 @@ import MY_TOKEN_KEY from "@/lib/get-cookie-name";
 import { apiServer } from "@/lib/api";
 import AppContext from "@/components/contexts/app-context";
 import Script from "next/script";
+import IframeDetector from "@/components/iframe-detector";
 
 const inter = Inter({
   variable: "--font-inter-sans",
@@ -100,6 +101,7 @@ export default async function RootLayout({
       <body
         className={`${inter.variable} ${ptSans.variable} antialiased bg-black dark h-[100dvh] overflow-hidden`}
       >
+        <IframeDetector />
         <Toaster richColors position="bottom-center" />
         <TanstackProvider>
           <AppContext me={data}>{children}</AppContext>

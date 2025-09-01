@@ -88,7 +88,6 @@ export const Preview = ({
         };
 
         const anchorElement = findClosestAnchor(event.target as HTMLElement);
-
         if (anchorElement) {
           let href = anchorElement.getAttribute("href");
           if (href) {
@@ -208,7 +207,7 @@ export const Preview = ({
               currentTab !== "preview" && device === "desktop",
           }
         )}
-        srcDoc={throttledHtml as string}
+        srcDoc={isAiWorking ? (throttledHtml as string) : html}
         onLoad={() => {
           if (iframeRef?.current?.contentWindow?.document?.body) {
             iframeRef.current.contentWindow.document.body.scrollIntoView({

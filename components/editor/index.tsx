@@ -41,7 +41,7 @@ export const AppEditor = ({
   const [, copyToClipboard] = useCopyToClipboard();
   const { htmlHistory, setHtmlHistory, prompts, setPrompts, pages, setPages } =
     useEditor(initialPages);
-  // get query params from URL
+
   const searchParams = useSearchParams();
   const router = useRouter();
   const deploy = searchParams.get("deploy") === "true";

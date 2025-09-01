@@ -71,10 +71,17 @@ export async function GET(
         const res = await fetch(`https://huggingface.co/spaces/${namespace}/${repoId}/raw/main/${fileInfo.path}`);
         if (res.ok) {
           const html = await res.text();
+          if (fileInfo.path === "index.html") {
+            htmlFiles.unshift({
+              path: fileInfo.path,
+              html,
+            });
+          } else {
           htmlFiles.push({
             path: fileInfo.path,
-            html,
-          });
+              html,
+            });
+          }
         }
       }
     }

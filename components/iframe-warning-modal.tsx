@@ -18,14 +18,14 @@ interface IframeWarningModalProps {
 
 export default function IframeWarningModal({
   isOpen,
-  onOpenChange,
-}: IframeWarningModalProps) {
+}: // onOpenChange,
+IframeWarningModalProps) {
   const handleVisitSite = () => {
-    window.top!.location.href = "https://deepsite.hf.co";
+    window.open("https://deepsite.hf.co", "_blank");
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+    <Dialog open={isOpen} onOpenChange={() => {}}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-2">

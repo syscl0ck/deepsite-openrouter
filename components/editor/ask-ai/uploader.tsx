@@ -111,7 +111,7 @@ export const Uploader = ({
                   <p className="text-xs text-left text-neutral-700 mb-2">
                     Uploaded Images
                   </p>
-                  <div className="grid grid-cols-4 gap-1 flex-wrap">
+                  <div className="grid grid-cols-4 gap-1 flex-wrap max-h-40 overflow-y-auto">
                     {files.map((file) => (
                       <div
                         key={file}

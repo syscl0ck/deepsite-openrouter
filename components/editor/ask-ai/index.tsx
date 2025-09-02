@@ -10,8 +10,8 @@ import { FaStopCircle } from "react-icons/fa";
 import ProModal from "@/components/pro-modal";
 import { Button } from "@/components/ui/button";
 import { MODELS } from "@/lib/providers";
-import { HtmlHistory, Page } from "@/types";
-import { InviteFriends } from "@/components/invite-friends";
+import { HtmlHistory, Page, Project } from "@/types";
+// import { InviteFriends } from "@/components/invite-friends";
 import { Settings } from "@/components/editor/ask-ai/settings";
 import { LoginModal } from "@/components/login-modal";
 import { ReImagine } from "@/components/editor/ask-ai/re-imagine";
@@ -23,8 +23,12 @@ import { SelectedHtmlElement } from "./selected-html-element";
 import { FollowUpTooltip } from "./follow-up-tooltip";
 import { isTheSameHtml } from "@/lib/compare-html-diff";
 import { useCallAi } from "@/hooks/useCallAi";
+import { SelectedFiles } from "./selected-files";
+import { Uploader } from "./uploader";
 
 export function AskAI({
+  project,
+  images,
   currentPage,
   previousPrompts,
   onScrollToBottom,
@@ -35,13 +39,17 @@ export function AskAI({
   htmlHistory,
   selectedElement,
   setSelectedElement,
+  selectedFiles,
+  setSelectedFiles,
   setIsEditableModeEnabled,
   onNewPrompt,
   onSuccess,
   setPages,
   setCurrentPage,
 }: {
+  project?: Project | null;
   currentPage: Page;
+  images?: string[];
   pages: Page[];
   onScrollToBottom: () => void;
   previousPrompts: string[];
@@ -55,6 +63,8 @@ export function AskAI({
   setIsEditableModeEnabled: React.Dispatch<React.SetStateAction<boolean>>;
   selectedElement?: HTMLElement | null;
   setSelectedElement: React.Dispatch<React.SetStateAction<HTMLElement | null>>;
+  selectedFiles: string[];
+  setSelectedFiles: React.Dispatch<React.SetStateAction<string[]>>;
   setPages: React.Dispatch<React.SetStateAction<Page[]>>;
   setCurrentPage: React.Dispatch<React.SetStateAction<string>>;
 }) {
@@ -72,6 +82,8 @@ export function AskAI({
   const [isThinking, setIsThinking] = useState(true);
   const [think, setThink] = useState("");
   const [isFollowUp, setIsFollowUp] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
+  const [files, setFiles] = useState<string[]>(images ?? []);
 
   const {
     callAiNewProject,
@@ -110,7 +122,8 @@ export function AskAI({
         model,
         provider,
         previousPrompt,
-        selectedElementHtml
+        selectedElementHtml,
+        selectedFiles
       );
 
       if (result?.error) {
@@ -254,6 +267,13 @@ export function AskAI({
             </main>
           </div>
         )}
+        <SelectedFiles
+          files={selectedFiles}
+          isAiWorking={isAiWorking}
+          onDelete={(file) =>
+            setSelectedFiles((prev) => prev.filter((f) => f !== file))
+          }
+        />
         {selectedElement && (
           <div className="px-4 pt-3">
             <SelectedHtmlElement
@@ -264,21 +284,25 @@ export function AskAI({
           </div>
         )}
         <div className="w-full relative flex items-center justify-between">
-          {isAiWorking && (
+          {(isAiWorking || isUploading) && (
             <div className="absolute bg-neutral-800 rounded-lg top-0 left-4 w-[calc(100%-30px)] h-full z-1 flex items-start pt-3.5 justify-between max-lg:text-sm">
               <div className="flex items-center justify-start gap-2">
                 <Loading overlay={false} className="!size-4" />
                 <p className="text-neutral-400 text-sm">
-                  AI is {isThinking ? "thinking" : "coding"}...{" "}
+                  {isUploading
+                    ? "Uploading images..."
+                    : `AI is ${isThinking ? "thinking" : "coding"}...`}
                 </p>
               </div>
-              <div
-                className="text-xs text-neutral-400 px-1 py-0.5 rounded-md border border-neutral-600 flex items-center justify-center gap-1.5 bg-neutral-800 hover:brightness-110 transition-all duration-200 cursor-pointer"
-                onClick={stopController}
-              >
-                <FaStopCircle />
-                Stop generation
-              </div>
+              {isAiWorking && (
+                <div
+                  className="text-xs text-neutral-400 px-1 py-0.5 rounded-md border border-neutral-600 flex items-center justify-center gap-1.5 bg-neutral-800 hover:brightness-110 transition-all duration-200 cursor-pointer"
+                  onClick={stopController}
+                >
+                  <FaStopCircle />
+                  Stop generation
+                </div>
+              )}
             </div>
           )}
           <textarea
@@ -307,6 +331,22 @@ export function AskAI({
         </div>
         <div className="flex items-center justify-between gap-2 px-4 pb-3 mt-2">
           <div className="flex-1 flex items-center justify-start gap-1.5">
+            <Uploader
+              pages={pages}
+              onLoading={setIsUploading}
+              isLoading={isUploading}
+              onFiles={setFiles}
+              onSelectFile={(file) => {
+                if (selectedFiles.includes(file)) {
+                  setSelectedFiles((prev) => prev.filter((f) => f !== file));
+                } else {
+                  setSelectedFiles((prev) => [...prev, file]);
+                }
+              }}
+              files={files}
+              selectedFiles={selectedFiles}
+              project={project}
+            />
             <ReImagine onRedesign={(md) => callAi(md)} />
             {!isSameHtml && (
               <Tooltip>
@@ -335,7 +375,7 @@ export function AskAI({
                 </TooltipContent>
               </Tooltip>
             )}
-            <InviteFriends />
+            {/* <InviteFriends /> */}
           </div>
           <div className="flex items-center justify-end gap-2">
             <Settings
@@ -364,7 +404,7 @@ export function AskAI({
           onClose={() => setOpenProModal(false)}
         />
         {pages.length === 1 && (
-          <div className="border border-sky-500/20 bg-sky-500/20 text-sky-500 pl-2 pr-4 py-1.5 text-xs rounded-full absolute top-0 -translate-y-[calc(100%+8px)] left-0 max-w-max flex items-center justify-start gap-2">
+          <div className="border border-sky-500/20 bg-sky-500/40 hover:bg-sky-600 transition-all duration-200 text-sky-500 pl-2 pr-4 py-1.5 text-xs rounded-full absolute top-0 -translate-y-[calc(100%+8px)] left-0 max-w-max flex items-center justify-start gap-2">
             <span className="rounded-full text-[10px] font-semibold bg-white text-neutral-900 px-1.5 py-0.5">
               NEW
             </span>

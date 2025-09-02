@@ -197,7 +197,7 @@ export async function PUT(request: NextRequest) {
   const userToken = request.cookies.get(MY_TOKEN_KEY())?.value;
 
   const body = await request.json();
-  const { prompt, previousPrompt, provider, selectedElementHtml, model, pages } =
+  const { prompt, previousPrompt, provider, selectedElementHtml, model, pages, files } =
     body;
 
   if (!prompt || pages.length === 0) {
@@ -281,7 +281,7 @@ export async function PUT(request: NextRequest) {
               selectedElementHtml
                 ? `\n\nYou have to update ONLY the following element, NOTHING ELSE: \n\n\`\`\`html\n${selectedElementHtml}\n\`\`\``
                 : ""
-            }. Current pages: ${pages?.map((p: Page) => `- ${p.path} \n${p.html}`).join("\n")}.`,
+            }. Current pages: ${pages?.map((p: Page) => `- ${p.path} \n${p.html}`).join("\n")}. ${files?.length > 0 ? `Current images: ${files?.map((f: string) => `- ${f}`).join("\n")}.` : ""}`,
           },
           {
             role: "user",

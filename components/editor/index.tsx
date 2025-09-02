@@ -31,10 +31,12 @@ import { ListPages } from "./pages";
 export const AppEditor = ({
   project,
   pages: initialPages,
+  images,
   isNew,
 }: {
   project?: Project | null;
   pages?: Page[];
+  images?: string[];
   isNew?: boolean;
 }) => {
   const [htmlStorage, , removeHtmlStorage] = useLocalStorage("pages");
@@ -63,6 +65,7 @@ export const AppEditor = ({
   const [selectedElement, setSelectedElement] = useState<HTMLElement | null>(
     null
   );
+  const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
 
   const resetLayout = () => {
     if (!editor.current || !preview.current) return;
@@ -285,6 +288,8 @@ export const AppEditor = ({
                 onValidate={handleEditorValidation}
               />
               <AskAI
+                project={project}
+                images={images}
                 currentPage={currentPageData}
                 htmlHistory={htmlHistory}
                 previousPrompts={project?.prompts ?? []}
@@ -297,6 +302,7 @@ export const AppEditor = ({
                   });
                   setHtmlHistory(currentHistory);
                   setSelectedElement(null);
+                  setSelectedFiles([]);
                   // if xs or sm
                   if (window.innerWidth <= 1024) {
                     setCurrentTab("preview");
@@ -340,6 +346,8 @@ export const AppEditor = ({
                 setIsEditableModeEnabled={setIsEditableModeEnabled}
                 selectedElement={selectedElement}
                 setSelectedElement={setSelectedElement}
+                setSelectedFiles={setSelectedFiles}
+                selectedFiles={selectedFiles}
               />
             </div>
             <div
@@ -367,21 +375,6 @@ export const AppEditor = ({
         />
       </main>
       <Footer
-        onReset={() => {
-          if (isAiWorking) {
-            toast.warning("Please wait for the AI to finish working.");
-            return;
-          }
-          if (
-            window.confirm("You're about to reset the editor. Are you sure?")
-          ) {
-            // setHtml(defaultHTML);
-            removeHtmlStorage();
-            editorRef.current?.revealLine(
-              editorRef.current?.getModel()?.getLineCount() ?? 0
-            );
-          }
-        }}
         htmlHistory={htmlHistory}
         setPages={setPages}
         iframeRef={iframeRef}

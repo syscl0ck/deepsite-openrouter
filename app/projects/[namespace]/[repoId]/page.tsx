@@ -36,5 +36,7 @@ export default async function ProjectNamespacePage({
   if (!data?.pages) {
     redirect("/projects");
   }
-  return <AppEditor project={data} pages={data.pages} />;
+  return (
+    <AppEditor project={data} pages={data.pages} images={data.images ?? []} />
+  );
 }

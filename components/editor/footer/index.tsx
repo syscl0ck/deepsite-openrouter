@@ -8,6 +8,7 @@ import { MdAdd } from "react-icons/md";
 import { History } from "@/components/editor/history";
 import { UserMenu } from "@/components/user-menu";
 import { useUser } from "@/hooks/useUser";
+import Link from "next/link";
 
 const DEVICES = [
   {
@@ -21,14 +22,12 @@ const DEVICES = [
 ];
 
 export function Footer({
-  onReset,
   htmlHistory,
   setPages,
   device,
   setDevice,
   iframeRef,
 }: {
-  onReset: () => void;
   htmlHistory?: HtmlHistory[];
   device: "desktop" | "mobile";
   setPages: (pages: Page[]) => void;
@@ -62,10 +61,12 @@ export function Footer({
             <UserMenu className="!p-1 !pr-3 !h-auto" />
           ))}
         {user && <p className="text-neutral-700">|</p>}
-        <Button size="sm" variant="secondary" onClick={onReset}>
-          <MdAdd className="text-sm" />
-          New <span className="max-lg:hidden">Project</span>
-        </Button>
+        <Link href="/projects/new">
+          <Button size="sm" variant="secondary">
+            <MdAdd className="text-sm" />
+            New <span className="max-lg:hidden">Project</span>
+          </Button>
+        </Link>
         {htmlHistory && htmlHistory.length > 0 && (
           <>
             <p className="text-neutral-700">|</p>

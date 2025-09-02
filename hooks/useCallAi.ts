@@ -237,7 +237,7 @@ export const useCallAi = ({
     }
   };
 
-  const callAiFollowUp = async (prompt: string, model: string | undefined, provider: string | undefined, previousPrompt: string, selectedElementHtml?: string) => {
+  const callAiFollowUp = async (prompt: string, model: string | undefined, provider: string | undefined, previousPrompt: string, selectedElementHtml?: string, files?: string[]) => {
     if (isAiWorking) return;
     if (!prompt.trim()) return;
     
@@ -258,6 +258,7 @@ export const useCallAi = ({
           model,
           pages,
           selectedElementHtml,
+          files,
         }),
         headers: {
           "Content-Type": "application/json",

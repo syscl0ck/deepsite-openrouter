@@ -65,6 +65,9 @@ export async function GET(
     };
 
     const htmlFiles: Page[] = [];
+    const images: string[] = [];
+
+    const allowedImagesExtensions = ["jpg", "jpeg", "png", "gif", "svg", "webp", "avif", "heic", "heif", "ico", "bmp", "tiff", "tif"];
     
     for await (const fileInfo of listFiles({repo, accessToken: user.token as string})) {
       if (fileInfo.path.endsWith(".html")) {
@@ -81,6 +84,13 @@ export async function GET(
             path: fileInfo.path,
               html,
             });
+          }
+        }
+      }
+      if (fileInfo.type === "directory" && fileInfo.path === "images") {
+        for await (const imageInfo of listFiles({repo, accessToken: user.token as string, path: fileInfo.path})) {
+          if (allowedImagesExtensions.includes(imageInfo.path.split(".").pop() || "")) {
+            images.push(`https://huggingface.co/spaces/${namespace}/${repoId}/resolve/main/${imageInfo.path}`);
           }
         }
       }
@@ -101,6 +111,7 @@ export async function GET(
         project: {
           ...project,
           pages: htmlFiles,
+          images,
         },
         ok: true,
       },

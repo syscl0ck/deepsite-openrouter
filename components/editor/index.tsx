@@ -39,10 +39,11 @@ export const AppEditor = ({
   images?: string[];
   isNew?: boolean;
 }) => {
+  console.log(project?.prompts);
   const [htmlStorage, , removeHtmlStorage] = useLocalStorage("pages");
   const [, copyToClipboard] = useCopyToClipboard();
   const { htmlHistory, setHtmlHistory, prompts, setPrompts, pages, setPages } =
-    useEditor(initialPages);
+    useEditor(initialPages, project?.prompts ?? []);
 
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -292,7 +293,7 @@ export const AppEditor = ({
                 images={images}
                 currentPage={currentPageData}
                 htmlHistory={htmlHistory}
-                previousPrompts={project?.prompts ?? []}
+                previousPrompts={prompts}
                 onSuccess={(newPages, p: string) => {
                   const currentHistory = [...htmlHistory];
                   currentHistory.unshift({

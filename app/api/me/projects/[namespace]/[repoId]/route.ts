@@ -172,6 +172,10 @@ export async function PUT(
   };
 
   const files: File[] = [];
+  const promptsFile = new File([prompts.join("\n")], "prompts.txt", {
+    type: "text/plain",
+  });
+  files.push(promptsFile);
   pages.forEach((page: Page) => {
     const file = new File([page.html], page.path, { type: "text/html" });
     files.push(file);
@@ -188,7 +192,6 @@ export async function PUT(
     {
       $set: {
         prompts: [
-          ...(project && "prompts" in project ? project.prompts : []),
           ...prompts,
         ],
       },

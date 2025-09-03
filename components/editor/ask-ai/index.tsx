@@ -72,7 +72,6 @@ export function AskAI({
 
   const [open, setOpen] = useState(false);
   const [prompt, setPrompt] = useState("");
-  const [previousPrompt, setPreviousPrompt] = useState("");
   const [provider, setProvider] = useLocalStorage("provider", "auto");
   const [model, setModel] = useLocalStorage("model", MODELS[0].value);
   const [openProvider, setOpenProvider] = useState(false);
@@ -121,7 +120,7 @@ export function AskAI({
         prompt,
         model,
         provider,
-        previousPrompt,
+        previousPrompts,
         selectedElementHtml,
         selectedFiles
       );
@@ -132,7 +131,6 @@ export function AskAI({
       }
 
       if (result?.success) {
-        setPreviousPrompt(prompt);
         setPrompt("");
       }
     } else if (isFollowUp && pages.length > 1 && isSameHtml) {
@@ -152,7 +150,6 @@ export function AskAI({
       }
 
       if (result?.success) {
-        setPreviousPrompt(prompt);
         setPrompt("");
       }
     } else {
@@ -173,7 +170,6 @@ export function AskAI({
       }
 
       if (result?.success) {
-        setPreviousPrompt(prompt);
         setPrompt("");
         if (selectedModel?.isThinker) {
           setModel(MODELS[0].value);
@@ -285,13 +281,11 @@ export function AskAI({
         )}
         <div className="w-full relative flex items-center justify-between">
           {(isAiWorking || isUploading) && (
-            <div className="absolute bg-neutral-800 rounded-lg top-0 left-4 w-[calc(100%-30px)] h-full z-1 flex items-start pt-3.5 justify-between max-lg:text-sm">
+            <div className="absolute bg-neutral-800 top-0 left-4 w-[calc(100%-30px)] h-full z-1 flex items-start pt-3.5 justify-between max-lg:text-sm">
               <div className="flex items-center justify-start gap-2">
                 <Loading overlay={false} className="!size-4" />
                 <p className="text-neutral-400 text-sm">
-                  {isUploading
-                    ? "Uploading images..."
-                    : `AI is ${isThinking ? "thinking" : "coding"}...`}
+                  {isUploading ? "Uploading images..." : "AI is working..."}
                 </p>
               </div>
               {isAiWorking && (

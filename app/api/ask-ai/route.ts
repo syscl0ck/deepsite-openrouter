@@ -197,7 +197,7 @@ export async function PUT(request: NextRequest) {
   const userToken = request.cookies.get(MY_TOKEN_KEY())?.value;
 
   const body = await request.json();
-  const { prompt, previousPrompt, provider, selectedElementHtml, model, pages, files } =
+  const { prompt, previousPrompts, provider, selectedElementHtml, model, pages, files, } =
     body;
 
   if (!prompt || pages.length === 0) {
@@ -270,8 +270,8 @@ export async function PUT(request: NextRequest) {
           },
           {
             role: "user",
-            content: previousPrompt
-              ? previousPrompt
+            content: previousPrompts
+              ? `Also here are the previous prompts:\n\n${previousPrompts.map((p: string) => `- ${p}`).join("\n")}`
               : "You are modifying the HTML file based on the user's request.",
           },
           {

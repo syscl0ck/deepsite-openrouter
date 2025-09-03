@@ -96,7 +96,10 @@ Check out the configuration reference at https://huggingface.co/docs/hub/spaces-
     const readmeFile = new File([readme], "README.md", {
       type: "text/markdown",
     });
-    const files = [readmeFile];
+    const promptsFile = new File([prompts.join("\n")], "prompts.txt", {
+      type: "text/plain",
+    });
+    const files = [readmeFile, promptsFile];
     pages.forEach((page: Page) => {
       const file = new File([page.html], page.path, { type: "text/html" });
       files.push(file);

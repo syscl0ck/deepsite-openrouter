@@ -187,6 +187,7 @@ export const Uploader = ({
         size="iconXs"
         variant="outline"
         className="!border-neutral-600 !text-neutral-400 !hover:!border-neutral-500 hover:!text-neutral-300"
+        onClick={() => setOpen(true)}
       >
         <Images className="size-4" />
       </Button>

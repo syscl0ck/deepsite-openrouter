@@ -27,6 +27,7 @@ import { SelectedFiles } from "./selected-files";
 import { Uploader } from "./uploader";
 
 export function AskAI({
+  isNew,
   project,
   images,
   currentPage,
@@ -341,7 +342,7 @@ export function AskAI({
               selectedFiles={selectedFiles}
               project={project}
             />
-            <ReImagine onRedesign={(md) => callAi(md)} />
+            {isNew && <ReImagine onRedesign={(md) => callAi(md)} />}
             {!isSameHtml && (
               <Tooltip>
                 <TooltipTrigger asChild>

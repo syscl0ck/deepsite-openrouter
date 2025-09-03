@@ -1,6 +1,6 @@
 import classNames from "classnames";
 import { FaMobileAlt } from "react-icons/fa";
-import { HelpCircle, RefreshCcw, SparkleIcon } from "lucide-react";
+import { HelpCircle, LogIn, RefreshCcw, SparkleIcon } from "lucide-react";
 import { FaLaptopCode } from "react-icons/fa6";
 import { HtmlHistory, Page } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,8 @@ import { History } from "@/components/editor/history";
 import { UserMenu } from "@/components/user-menu";
 import { useUser } from "@/hooks/useUser";
 import Link from "next/link";
+import { useLocalStorage } from "react-use";
+import { isTheSameHtml } from "@/lib/compare-html-diff";
 
 const DEVICES = [
   {
@@ -22,19 +24,23 @@ const DEVICES = [
 ];
 
 export function Footer({
+  pages,
+  isNew = false,
   htmlHistory,
   setPages,
   device,
   setDevice,
   iframeRef,
 }: {
+  pages: Page[];
+  isNew?: boolean;
   htmlHistory?: HtmlHistory[];
   device: "desktop" | "mobile";
   setPages: (pages: Page[]) => void;
   iframeRef?: React.RefObject<HTMLIFrameElement | null>;
   setDevice: React.Dispatch<React.SetStateAction<"desktop" | "mobile">>;
 }) {
-  const { user } = useUser();
+  const { user, openLoginWindow } = useUser();
 
   const handleRefreshIframe = () => {
     if (iframeRef?.current) {
@@ -47,11 +53,19 @@ export function Footer({
     }
   };
 
+  const [, setStorage] = useLocalStorage("pages");
+  const handleClick = async () => {
+    if (pages && !isTheSameHtml(pages[0].html)) {
+      setStorage(pages);
+    }
+    openLoginWindow();
+  };
+
   return (
     <footer className="border-t bg-slate-200 border-slate-300 dark:bg-neutral-950 dark:border-neutral-800 px-3 py-2 flex items-center justify-between sticky bottom-0 z-20">
       <div className="flex items-center gap-2">
-        {user &&
-          (user?.isLocalUse ? (
+        {user ? (
+          user?.isLocalUse ? (
             <>
               <div className="max-w-max bg-amber-500/10 rounded-full px-3 py-1 text-amber-500 border border-amber-500/20 text-sm font-semibold">
                 Local Usage
@@ -59,14 +73,22 @@ export function Footer({
             </>
           ) : (
             <UserMenu className="!p-1 !pr-3 !h-auto" />
-          ))}
-        {user && <p className="text-neutral-700">|</p>}
-        <Link href="/projects/new">
-          <Button size="sm" variant="secondary">
-            <MdAdd className="text-sm" />
-            New <span className="max-lg:hidden">Project</span>
+          )
+        ) : (
+          <Button size="sm" variant="default" onClick={handleClick}>
+            <LogIn className="text-sm" />
+            Log In
           </Button>
-        </Link>
+        )}
+        {user && !isNew && <p className="text-neutral-700">|</p>}
+        {!isNew && (
+          <Link href="/projects/new">
+            <Button size="sm" variant="secondary">
+              <MdAdd className="text-sm" />
+              New <span className="max-lg:hidden">Project</span>
+            </Button>
+          </Link>
+        )}
         {htmlHistory && htmlHistory.length > 0 && (
           <>
             <p className="text-neutral-700">|</p>

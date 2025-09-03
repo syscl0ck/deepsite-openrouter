@@ -39,11 +39,14 @@ export const AppEditor = ({
   images?: string[];
   isNew?: boolean;
 }) => {
-  console.log(project?.prompts);
   const [htmlStorage, , removeHtmlStorage] = useLocalStorage("pages");
   const [, copyToClipboard] = useCopyToClipboard();
   const { htmlHistory, setHtmlHistory, prompts, setPrompts, pages, setPages } =
-    useEditor(initialPages, project?.prompts ?? []);
+    useEditor(
+      initialPages,
+      project?.prompts ?? [],
+      typeof htmlStorage === "string" ? htmlStorage : undefined
+    );
 
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -376,10 +379,12 @@ export const AppEditor = ({
         />
       </main>
       <Footer
+        pages={pages}
         htmlHistory={htmlHistory}
         setPages={setPages}
         iframeRef={iframeRef}
         device={device}
+        isNew={isNew}
         setDevice={setDevice}
       />
     </section>

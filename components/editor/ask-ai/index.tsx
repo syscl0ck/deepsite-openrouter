@@ -284,9 +284,70 @@ export function AskAI({
           {(isAiWorking || isUploading) && (
             <div className="absolute bg-neutral-800 top-0 left-4 w-[calc(100%-30px)] h-full z-1 flex items-start pt-3.5 justify-between max-lg:text-sm">
               <div className="flex items-center justify-start gap-2">
-                <Loading overlay={false} className="!size-4" />
+                <Loading overlay={false} className="!size-4 opacity-50" />
                 <p className="text-neutral-400 text-sm">
-                  {isUploading ? "Uploading images..." : "AI is working..."}
+                  {isUploading ? (
+                    "Uploading images..."
+                  ) : isAiWorking && !isSameHtml ? (
+                    "AI is working..."
+                  ) : (
+                    <span className="inline-flex">
+                      {[
+                        "D",
+                        "e",
+                        "e",
+                        "p",
+                        "S",
+                        "i",
+                        "t",
+                        "e",
+                        " ",
+                        "i",
+                        "s",
+                        " ",
+                        "T",
+                        "h",
+                        "i",
+                        "n",
+                        "k",
+                        "i",
+                        "n",
+                        "g",
+                        ".",
+                        ".",
+                        ".",
+                        " ",
+                        "W",
+                        "a",
+                        "i",
+                        "t",
+                        " ",
+                        "a",
+                        " ",
+                        "m",
+                        "o",
+                        "m",
+                        "e",
+                        "n",
+                        "t",
+                        ".",
+                        ".",
+                        ".",
+                      ].map((char, index) => (
+                        <span
+                          key={index}
+                          className="bg-gradient-to-r from-neutral-100 to-neutral-300 bg-clip-text text-transparent animate-pulse"
+                          style={{
+                            animationDelay: `${index * 0.1}s`,
+                            animationDuration: "1.3s",
+                            animationIterationCount: "infinite",
+                          }}
+                        >
+                          {char === " " ? "\u00A0" : char}
+                        </span>
+                      ))}
+                    </span>
+                  )}
                 </p>
               </div>
               {isAiWorking && (

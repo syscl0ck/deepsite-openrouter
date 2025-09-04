@@ -100,10 +100,10 @@ export async function POST(request: NextRequest) {
 
   let rewrittenPrompt = prompt;
 
-  if (prompt?.length < 240) {
+  // if (prompt?.length < 240) {
     
     rewrittenPrompt = await callAiRewritePrompt(prompt, { token, billTo });
-  }
+  // }
 
   try {
     const encoder = new TextEncoder();

@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
 
   // if (prompt?.length < 240) {
     
-    rewrittenPrompt = await callAiRewritePrompt(prompt, { token, billTo });
+    //rewrittenPrompt = await callAiRewritePrompt(prompt, { token, billTo });
   // }
 
   try {

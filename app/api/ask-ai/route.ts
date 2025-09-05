@@ -19,7 +19,6 @@ import {
 } from "@/lib/prompts";
 import MY_TOKEN_KEY from "@/lib/get-cookie-name";
 import { Page } from "@/types";
-import { callAiRewritePrompt } from "@/app/actions/rewrite-prompt";
 
 const ipAddresses = new Map();
 
@@ -98,7 +97,7 @@ export async function POST(request: NextRequest) {
       ? PROVIDERS[selectedModel.autoProvider as keyof typeof PROVIDERS]
       : PROVIDERS[provider as keyof typeof PROVIDERS] ?? DEFAULT_PROVIDER;
 
-  let rewrittenPrompt = prompt;
+  const rewrittenPrompt = prompt;
 
   // if (prompt?.length < 240) {
     

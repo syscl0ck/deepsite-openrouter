@@ -77,4 +77,11 @@ export const MODELS = [
     isNew: true,
     autoProvider: "fireworks-ai",
   },
+  {
+    value: "moonshotai/Kimi-K2-Instruct-0905",
+    label: "Kimi K2 Instruct 0905",
+    providers: ["together", "groq", "novita"],
+    isNew: true,
+    autoProvider: "groq"
+  }
 ];

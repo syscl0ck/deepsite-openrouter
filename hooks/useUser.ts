@@ -8,6 +8,8 @@ import { User } from "@/types";
 import MY_TOKEN_KEY from "@/lib/get-cookie-name";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
+import { getAuthCookieOptions, getIframeCookieOptions, getRemoveCookieOptions } from "@/lib/cookie-options";
+
 
 export const useUser = (initialData?: {
   user: User | null;
@@ -16,7 +18,7 @@ export const useUser = (initialData?: {
   const cookie_name = MY_TOKEN_KEY();
   const client = useQueryClient();
   const router = useRouter();
-  const [, setCookie, removeCookie] = useCookie(cookie_name);
+  const [, setCookie] = useCookie(cookie_name);
   const [currentRoute, setCurrentRoute] = useCookie("deepsite-currentRoute");
 
   const { data: { user, errCode } = { user: null, errCode: null }, isLoading } =
@@ -47,7 +49,7 @@ export const useUser = (initialData?: {
   };
 
   const openLoginWindow = async () => {
-    setCurrentRoute(window.location.pathname);
+    setCurrentRoute(window.location.pathname, getIframeCookieOptions());
     return router.push("/auth");
   };
 
@@ -58,20 +60,14 @@ export const useUser = (initialData?: {
       .post("/auth", { code })
       .then(async (res: any) => {
         if (res.data) {
-          setCookie(res.data.access_token, {
-            expires: res.data.expires_in
-              ? new Date(Date.now() + res.data.expires_in * 1000)
-              : undefined,
-            sameSite: "none",
-            secure: true,
-          });
+          setCookie(res.data.access_token, getAuthCookieOptions(res.data.expires_in));
           client.setQueryData(["user.me"], {
             user: res.data.user,
             errCode: null,
           });
           if (currentRoute) {
             router.push(currentRoute);
-            setCurrentRoute("");
+            setCurrentRoute("", getIframeCookieOptions());
           } else {
             router.push("/projects");
           }
@@ -87,7 +83,7 @@ export const useUser = (initialData?: {
   };
 
   const logout = async () => {
-    removeCookie();
+    setCookie("", getRemoveCookieOptions());
     router.push("/");
     toast.success("Logout successful");
     client.setQueryData(["user.me"], {

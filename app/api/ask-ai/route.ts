@@ -3,8 +3,9 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { InferenceClient } from "@huggingface/inference";
+import { createOpenRouterClient } from "@/lib/openrouter-client";
 
-import { MODELS, PROVIDERS } from "@/lib/providers";
+import { MODELS, PROVIDERS, getOpenRouterTokenLimits } from "@/lib/providers";
 import {
   DIVIDER,
   FOLLOW_UP_SYSTEM_PROMPT,
@@ -28,6 +29,9 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json();
   const { prompt, provider, model, redesignMarkdown, previousPrompts, pages } = body;
+  
+  // Debug: Log the received model
+  // console.log("Received model:", model);
 
   if (!model || (!prompt && !redesignMarkdown)) {
     return NextResponse.json(
@@ -41,11 +45,21 @@ export async function POST(request: NextRequest) {
   );
 
   if (!selectedModel) {
+    // console.log("Available models:", MODELS.map(m => m.value));
     return NextResponse.json(
       { ok: false, error: "Invalid model selected" },
       { status: 400 }
     );
   }
+
+  // Map old model names to OpenRouter model names
+  const getOpenRouterModelName = (modelValue: string) => {
+    const modelMapping: Record<string, string> = {
+      "deepseek-ai/DeepSeek-V3-0324": "deepseek/deepseek-chat-v3-0324",
+      "deepseek-ai/DeepSeek-R1-0528": "deepseek/deepseek-r1",
+    };
+    return modelMapping[modelValue] || modelValue;
+  };
 
   if (!selectedModel.providers.includes(provider) && provider !== "auto") {
     return NextResponse.json(
@@ -97,6 +111,20 @@ export async function POST(request: NextRequest) {
       ? PROVIDERS[selectedModel.autoProvider as keyof typeof PROVIDERS]
       : PROVIDERS[provider as keyof typeof PROVIDERS] ?? DEFAULT_PROVIDER;
 
+  // Debug logging (simplified)
+  console.log(`Provider: ${provider} -> ${selectedProvider.id} (${selectedModel.value})`);
+
+  // Check if OpenRouter is selected but API key is missing
+  if (selectedProvider.id === "openrouter" && !process.env.OPENROUTER_API_KEY) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: "OpenRouter API key not configured. Please add OPENROUTER_API_KEY to your environment variables.",
+      },
+      { status: 500 }
+    );
+  }
+
   const rewrittenPrompt = prompt;
 
   // if (prompt?.length < 240) {
@@ -120,41 +148,102 @@ export async function POST(request: NextRequest) {
     (async () => {
       // let completeResponse = "";
       try {
-        const client = new InferenceClient(token);
-        const chatCompletion = client.chatCompletionStream(
-          {
-            model: selectedModel.value,
-            provider: selectedProvider.id as any,
+        if (selectedProvider.id === "openrouter") {
+          // Handle OpenRouter API calls
+          console.log("Using OpenRouter provider");
+          const openRouterToken = process.env.OPENROUTER_API_KEY;
+          if (!openRouterToken) {
+            console.error("OpenRouter API key not found in environment variables");
+            throw new Error("OpenRouter API key not configured");
+          }
+
+          const openRouterClient = createOpenRouterClient(openRouterToken, {
+            httpReferer: process.env.NEXT_PUBLIC_SITE_URL,
+            xTitle: "DeepSite",
+          });
+
+          // Estimate input tokens (rough approximation: 1 token ≈ 4 characters)
+          const systemPromptTokens = Math.ceil(INITIAL_SYSTEM_PROMPT.length / 4);
+          const pagesTokens = pages?.length > 1 ? Math.ceil(pages.map((p: Page) => `- ${p.path} \n${p.html}`).join("\n").length / 4) : 0;
+          const previousPromptsTokens = previousPrompts ? Math.ceil(previousPrompts.map((p: string) => `- ${p}`).join("\n").length / 4) : 0;
+          const userPromptTokens = Math.ceil((redesignMarkdown || rewrittenPrompt).length / 4);
+          const estimatedInputTokens = systemPromptTokens + pagesTokens + previousPromptsTokens + userPromptTokens;
+
+          // Get intelligent token limits based on model and input size
+          const tokenLimits = getOpenRouterTokenLimits(selectedModel.value, estimatedInputTokens);
+
+          const requestPayload = {
+            model: getOpenRouterModelName(selectedModel.value),
             messages: [
               {
-                role: "system",
+                role: "system" as const,
                 content: INITIAL_SYSTEM_PROMPT,
               },
               ...(pages?.length > 1 ? [{
-                role: "assistant",
+                role: "assistant" as const,
                 content: `Here are the current pages:\n\n${pages.map((p: Page) => `- ${p.path} \n${p.html}`).join("\n")}\n\nNow, please create a new page based on this code. Also here are the previous prompts:\n\n${previousPrompts.map((p: string) => `- ${p}`).join("\n")}`
               }] : []),
               {
-                role: "user",
+                role: "user" as const,
                 content: redesignMarkdown
                   ? `Here is my current design as a markdown:\n\n${redesignMarkdown}\n\nNow, please create a new design based on this markdown.`
                   : rewrittenPrompt,
               },
             ],
-            max_tokens: selectedProvider.max_tokens,
-          },
-          billTo ? { billTo } : {}
-        );
+            max_tokens: tokenLimits.max_tokens,
+            temperature: 0.7,
+            transforms: ["middle-out"], // Enable automatic prompt compression if needed
+          };
 
-        while (true) {
-          const { done, value } = await chatCompletion.next();
-          if (done) {
-            break;
+          // console.log("OpenRouter request payload:", JSON.stringify(requestPayload, null, 2));
+
+          const chatCompletion = openRouterClient.chatCompletionStream(requestPayload);
+
+          for await (const chunk of chatCompletion) {
+            const content = chunk.choices[0]?.delta?.content;
+            if (content) {
+              await writer.write(encoder.encode(content));
+            }
           }
+        } else {
+          // Handle Hugging Face Inference API calls (existing logic)
+          console.log("Using Hugging Face provider:", selectedProvider.id);
+          const client = new InferenceClient(token);
+          const chatCompletion = client.chatCompletionStream(
+            {
+              model: selectedModel.value,
+              provider: selectedProvider.id as any,
+              messages: [
+                {
+                  role: "system",
+                  content: INITIAL_SYSTEM_PROMPT,
+                },
+                ...(pages?.length > 1 ? [{
+                  role: "assistant",
+                  content: `Here are the current pages:\n\n${pages.map((p: Page) => `- ${p.path} \n${p.html}`).join("\n")}\n\nNow, please create a new page based on this code. Also here are the previous prompts:\n\n${previousPrompts.map((p: string) => `- ${p}`).join("\n")}`
+                }] : []),
+                {
+                  role: "user",
+                  content: redesignMarkdown
+                    ? `Here is my current design as a markdown:\n\n${redesignMarkdown}\n\nNow, please create a new design based on this markdown.`
+                    : rewrittenPrompt,
+                },
+              ],
+              max_tokens: Math.min(selectedProvider.max_tokens, 4096), // Cap at 4K tokens for output
+            },
+            billTo ? { billTo } : {}
+          );
 
-          const chunk = value.choices[0]?.delta?.content;
-          if (chunk) {
-            await writer.write(encoder.encode(chunk));
+          while (true) {
+            const { done, value } = await chatCompletion.next();
+            if (done) {
+              break;
+            }
+
+            const chunk = value.choices[0]?.delta?.content;
+            if (chunk) {
+              await writer.write(encoder.encode(chunk));
+            }
           }
         }
       } catch (error: any) {
@@ -224,6 +313,15 @@ export async function PUT(request: NextRequest) {
     );
   }
 
+  // Map old model names to OpenRouter model names
+  const getOpenRouterModelName = (modelValue: string) => {
+    const modelMapping: Record<string, string> = {
+      "deepseek-ai/DeepSeek-V3-0324": "deepseek/deepseek-chat-v3-0324",
+      "deepseek-ai/DeepSeek-R1-0528": "deepseek/deepseek-r1",
+    };
+    return modelMapping[modelValue] || modelValue;
+  };
+
   let token = userToken;
   let billTo: string | null = null;
 
@@ -257,8 +355,6 @@ export async function PUT(request: NextRequest) {
     billTo = "huggingface";
   }
 
-  const client = new InferenceClient(token);
-
   const DEFAULT_PROVIDER = PROVIDERS.novita;
   const selectedProvider =
     provider === "auto"
@@ -266,10 +362,34 @@ export async function PUT(request: NextRequest) {
       : PROVIDERS[provider as keyof typeof PROVIDERS] ?? DEFAULT_PROVIDER;
 
   try {
-    const response = await client.chatCompletion(
-      {
-        model: selectedModel.value,
-        provider: selectedProvider.id as any,
+    let response: any;
+
+    if (selectedProvider.id === "openrouter") {
+      // Handle OpenRouter API calls
+      const openRouterToken = process.env.OPENROUTER_API_KEY;
+      if (!openRouterToken) {
+        throw new Error("OpenRouter API key not configured");
+      }
+
+      const openRouterClient = createOpenRouterClient(openRouterToken, {
+        httpReferer: process.env.NEXT_PUBLIC_SITE_URL,
+        xTitle: "DeepSite",
+      });
+
+      // Estimate input tokens for PUT route
+      const systemPromptTokens = Math.ceil(FOLLOW_UP_SYSTEM_PROMPT.length / 4);
+      const previousPromptsTokens = previousPrompts ? Math.ceil(previousPrompts.map((p: string) => `- ${p}`).join("\n").length / 4) : 0;
+      const pagesTokens = pages ? Math.ceil(pages.map((p: Page) => `- ${p.path} \n${p.html}`).join("\n").length / 4) : 0;
+      const filesTokens = files?.length > 0 ? Math.ceil(files.map((f: string) => `- ${f}`).join("\n").length / 4) : 0;
+      const selectedElementTokens = selectedElementHtml ? Math.ceil(selectedElementHtml.length / 4) : 0;
+      const userPromptTokens = Math.ceil(prompt.length / 4);
+      const estimatedInputTokens = systemPromptTokens + previousPromptsTokens + pagesTokens + filesTokens + selectedElementTokens + userPromptTokens;
+
+      // Get intelligent token limits based on model and input size
+      const tokenLimits = getOpenRouterTokenLimits(selectedModel.value, estimatedInputTokens);
+
+      response = await openRouterClient.chatCompletion({
+        model: getOpenRouterModelName(selectedModel.value),
         messages: [
           {
             role: "system",
@@ -283,7 +403,6 @@ export async function PUT(request: NextRequest) {
           },
           {
             role: "assistant",
-
             content: `${
               selectedElementHtml
                 ? `\n\nYou have to update ONLY the following element, NOTHING ELSE: \n\n\`\`\`html\n${selectedElementHtml}\n\`\`\``
@@ -295,14 +414,50 @@ export async function PUT(request: NextRequest) {
             content: prompt,
           },
         ],
-        ...(selectedProvider.id !== "sambanova"
-          ? {
-              max_tokens: selectedProvider.max_tokens,
-            }
-          : {}),
-      },
-      billTo ? { billTo } : {}
-    );
+        max_tokens: tokenLimits.max_tokens,
+        temperature: 0.7,
+        transforms: ["middle-out"], // Enable automatic prompt compression if needed
+      });
+    } else {
+      // Handle Hugging Face Inference API calls (existing logic)
+      const client = new InferenceClient(token);
+      response = await client.chatCompletion(
+        {
+          model: selectedModel.value,
+          provider: selectedProvider.id as any,
+          messages: [
+            {
+              role: "system",
+              content: FOLLOW_UP_SYSTEM_PROMPT,
+            },
+            {
+              role: "user",
+              content: previousPrompts
+                ? `Also here are the previous prompts:\n\n${previousPrompts.map((p: string) => `- ${p}`).join("\n")}`
+                : "You are modifying the HTML file based on the user's request.",
+            },
+            {
+              role: "assistant",
+              content: `${
+                selectedElementHtml
+                  ? `\n\nYou have to update ONLY the following element, NOTHING ELSE: \n\n\`\`\`html\n${selectedElementHtml}\n\`\`\``
+                  : ""
+              }. Current pages: ${pages?.map((p: Page) => `- ${p.path} \n${p.html}`).join("\n")}. ${files?.length > 0 ? `Current images: ${files?.map((f: string) => `- ${f}`).join("\n")}.` : ""}`,
+            },
+            {
+              role: "user",
+              content: prompt,
+            },
+          ],
+          ...(selectedProvider.id !== "sambanova"
+            ? {
+                max_tokens: Math.min(selectedProvider.max_tokens, 4096), // Cap at 4K tokens for output
+              }
+            : {}),
+        },
+        billTo ? { billTo } : {}
+      );
+    }
 
     const chunk = response.choices[0]?.message?.content;
     if (!chunk) {

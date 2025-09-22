@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { headers } from "next/headers";
 import { InferenceClient } from "@huggingface/inference";
 import { createOpenRouterClient } from "@/lib/openrouter-client";
 
@@ -10,7 +9,6 @@ import {
   DIVIDER,
   FOLLOW_UP_SYSTEM_PROMPT,
   INITIAL_SYSTEM_PROMPT,
-  MAX_REQUESTS_PER_IP,
   NEW_PAGE_END,
   NEW_PAGE_START,
   REPLACE_END,
@@ -21,10 +19,8 @@ import {
 import MY_TOKEN_KEY from "@/lib/get-cookie-name";
 import { Page } from "@/types";
 
-const ipAddresses = new Map();
 
 export async function POST(request: NextRequest) {
-  const authHeaders = await headers();
   const userToken = request.cookies.get(MY_TOKEN_KEY())?.value;
 
   const body = await request.json();
@@ -84,23 +80,7 @@ export async function POST(request: NextRequest) {
     token = process.env.HF_TOKEN;
   }
 
-  const ip = authHeaders.get("x-forwarded-for")?.includes(",")
-    ? authHeaders.get("x-forwarded-for")?.split(",")[1].trim()
-    : authHeaders.get("x-forwarded-for");
-
   if (!token) {
-    ipAddresses.set(ip, (ipAddresses.get(ip) || 0) + 1);
-    if (ipAddresses.get(ip) > MAX_REQUESTS_PER_IP) {
-      return NextResponse.json(
-        {
-          ok: false,
-          openLogin: true,
-          message: "Log In to continue using the service",
-        },
-        { status: 429 }
-      );
-    }
-
     token = process.env.DEFAULT_HF_TOKEN as string;
     billTo = "huggingface";
   }
@@ -289,7 +269,6 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
-  const authHeaders = await headers();
   const userToken = request.cookies.get(MY_TOKEN_KEY())?.value;
 
   const body = await request.json();
@@ -334,23 +313,7 @@ export async function PUT(request: NextRequest) {
     token = process.env.HF_TOKEN;
   }
 
-  const ip = authHeaders.get("x-forwarded-for")?.includes(",")
-    ? authHeaders.get("x-forwarded-for")?.split(",")[1].trim()
-    : authHeaders.get("x-forwarded-for");
-
   if (!token) {
-    ipAddresses.set(ip, (ipAddresses.get(ip) || 0) + 1);
-    if (ipAddresses.get(ip) > MAX_REQUESTS_PER_IP) {
-      return NextResponse.json(
-        {
-          ok: false,
-          openLogin: true,
-          message: "Log In to continue using the service",
-        },
-        { status: 429 }
-      );
-    }
-
     token = process.env.DEFAULT_HF_TOKEN as string;
     billTo = "huggingface";
   }

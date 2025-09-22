@@ -13,7 +13,6 @@ import { MODELS } from "@/lib/providers";
 import { HtmlHistory, Page, Project } from "@/types";
 // import { InviteFriends } from "@/components/invite-friends";
 import { Settings } from "@/components/editor/ask-ai/settings";
-import { LoginModal } from "@/components/login-modal";
 import { ReImagine } from "@/components/editor/ask-ai/re-imagine";
 import Loading from "@/components/loading";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -71,7 +70,6 @@ export function AskAI({
 }) {
   const refThink = useRef<HTMLDivElement | null>(null);
 
-  const [open, setOpen] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [provider, setProvider] = useLocalStorage("provider", "auto");
   const [model, setModel] = useLocalStorage("model", MODELS[0].value);
@@ -187,9 +185,6 @@ export function AskAI({
 
   const handleError = (error: string, message?: string) => {
     switch (error) {
-      case "login_required":
-        setOpen(true);
-        break;
       case "provider_required":
         setOpenProvider(true);
         setProviderError(message || "");
@@ -453,7 +448,6 @@ export function AskAI({
             </Button>
           </div>
         </div>
-        <LoginModal open={open} onClose={() => setOpen(false)} pages={pages} />
         <ProModal
           pages={pages}
           open={openProModal}

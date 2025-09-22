@@ -72,10 +72,7 @@ export const useCallAi = ({
             const jsonResponse = isJson ? JSON.parse(contentResponse) : null;
             
             if (jsonResponse && !jsonResponse.ok) {
-              if (jsonResponse.openLogin) {
-                // Handle login required
-                return { error: "login_required" };
-              } else if (jsonResponse.openSelectProvider) {
+              if (jsonResponse.openSelectProvider) {
                 // Handle provider selection required
                 return { error: "provider_required", message: jsonResponse.message };
               } else if (jsonResponse.openProModal) {
@@ -124,9 +121,6 @@ export const useCallAi = ({
     } catch (error: any) {
       setisAiWorking(false);
       toast.error(error.message);
-      if (error.openLogin) {
-        return { error: "login_required" };
-      }
       return { error: "network_error", message: error.message };
     }
   };
@@ -176,10 +170,7 @@ export const useCallAi = ({
             const jsonResponse = isJson ? JSON.parse(contentResponse) : null;
             
             if (jsonResponse && !jsonResponse.ok) {
-              if (jsonResponse.openLogin) {
-                // Handle login required
-                return { error: "login_required" };
-              } else if (jsonResponse.openSelectProvider) {
+              if (jsonResponse.openSelectProvider) {
                 // Handle provider selection required
                 return { error: "provider_required", message: jsonResponse.message };
               } else if (jsonResponse.openProModal) {
@@ -230,9 +221,6 @@ export const useCallAi = ({
     } catch (error: any) {
       setisAiWorking(false);
       toast.error(error.message);
-      if (error.openLogin) {
-        return { error: "login_required" };
-      }
       return { error: "network_error", message: error.message };
     }
   };
@@ -271,10 +259,7 @@ export const useCallAi = ({
         const res = await request.json();
         
         if (!request.ok) {
-          if (res.openLogin) {
-            setisAiWorking(false);
-            return { error: "login_required" };
-          } else if (res.openSelectProvider) {
+          if (res.openSelectProvider) {
             setisAiWorking(false);
             return { error: "provider_required", message: res.message };
           } else if (res.openProModal) {
@@ -301,9 +286,6 @@ export const useCallAi = ({
     } catch (error: any) {
       setisAiWorking(false);
       toast.error(error.message);
-      if (error.openLogin) {
-        return { error: "login_required" };
-      }
       return { error: "network_error", message: error.message };
     }
   };

@@ -12,7 +12,6 @@ import { Page, Project } from "@/types";
 import Loading from "@/components/loading";
 import { RiCheckboxCircleFill } from "react-icons/ri";
 import { useUser } from "@/hooks/useUser";
-import { LoginModal } from "@/components/login-modal";
 import { DeployButtonContent } from "../deploy-button/content";
 
 export const Uploader = ({
@@ -187,17 +186,10 @@ export const Uploader = ({
         size="iconXs"
         variant="outline"
         className="!border-neutral-600 !text-neutral-400 !hover:!border-neutral-500 hover:!text-neutral-300"
-        onClick={() => setOpen(true)}
+        onClick={() => fileInputRef.current?.click()}
       >
         <Images className="size-4" />
       </Button>
-      <LoginModal
-        open={open}
-        onClose={() => setOpen(false)}
-        pages={pages}
-        title="Log In to add Custom Images"
-        description="Log In through your Hugging Face account to publish your project and increase your monthly free limit."
-      />
     </>
   );
 };

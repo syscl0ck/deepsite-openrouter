@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState } from "react";
 import { MdSave } from "react-icons/md";
 
 import { Button } from "@/components/ui/button";
@@ -8,7 +7,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { LoginModal } from "@/components/login-modal";
 import { useUser } from "@/hooks/useUser";
 import { Page } from "@/types";
 import { DeployButtonContent } from "./content";
@@ -21,7 +19,6 @@ export function DeployButton({
   prompts: string[];
 }) {
   const { user } = useUser();
-  const [open, setOpen] = useState(false);
 
   return (
     <div className="flex items-center justify-end gap-5">
@@ -51,7 +48,7 @@ export function DeployButton({
             <Button
               variant="default"
               className="max-lg:hidden !px-4"
-              onClick={() => setOpen(true)}
+              onClick={() => {/* Handle publish action */}}
             >
               <MdSave className="size-4" />
               Publish your Project
@@ -60,19 +57,12 @@ export function DeployButton({
               variant="default"
               size="sm"
               className="lg:hidden"
-              onClick={() => setOpen(true)}
+              onClick={() => {/* Handle publish action */}}
             >
               Publish
             </Button>
           </>
         )}
-        <LoginModal
-          open={open}
-          onClose={() => setOpen(false)}
-          pages={pages}
-          title="Log In to publish your Project"
-          description="Log In through your Hugging Face account to publish your project and increase your monthly free limit."
-        />
       </div>
     </div>
   );

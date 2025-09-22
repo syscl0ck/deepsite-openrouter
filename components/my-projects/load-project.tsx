@@ -15,7 +15,6 @@ import { Input } from "../ui/input";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { useUser } from "@/hooks/useUser";
-import { LoginModal } from "../login-modal";
 import { useRouter } from "next/navigation";
 
 export const LoadProject = ({
@@ -28,7 +27,6 @@ export const LoadProject = ({
   const { user } = useUser();
   const router = useRouter();
 
-  const [openLoginModal, setOpenLoginModal] = useState(false);
   const [open, setOpen] = useState(false);
   const [url, setUrl] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
@@ -85,7 +83,7 @@ export const LoadProject = ({
           <Button
             variant="outline"
             className="max-lg:hidden"
-            onClick={() => setOpenLoginModal(true)}
+            onClick={() => {/* Handle load project action */}}
           >
             <Import className="size-4 mr-1.5" />
             Load existing Project
@@ -94,18 +92,12 @@ export const LoadProject = ({
             variant="outline"
             size="sm"
             className="lg:hidden"
-            onClick={() => setOpenLoginModal(true)}
+            onClick={() => {/* Handle load project action */}}
           >
             {fullXsBtn && <Import className="size-3.5 mr-1" />}
             Load
             {fullXsBtn && " existing Project"}
           </Button>
-          <LoginModal
-            open={openLoginModal}
-            onClose={setOpenLoginModal}
-            title="Log In to load your Project"
-            description="Log In through Hugging Face to load an existing project and increase your free limit!"
-          />
         </>
       ) : (
         <Dialog open={open} onOpenChange={setOpen}>

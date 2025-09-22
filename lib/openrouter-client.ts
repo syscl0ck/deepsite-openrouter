@@ -99,24 +99,26 @@ export class OpenRouterClient {
       );
 
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Extract the actual error message from the response
-      let errorMessage = error.message;
-      if (error.response?.data) {
+      const err = error as { message?: string; response?: { data?: unknown; status?: number; statusText?: string } };
+      let errorMessage = err.message || 'Unknown error';
+      if (err.response?.data) {
         try {
-          const errorData = typeof error.response.data === 'string' 
-            ? JSON.parse(error.response.data) 
-            : error.response.data;
-          errorMessage = errorData.error?.message || errorData.message || errorMessage;
-        } catch (parseError) {
+          const errorData = typeof err.response.data === 'string' 
+            ? JSON.parse(err.response.data) 
+            : err.response.data;
+          errorMessage = (errorData as { error?: { message?: string }; message?: string }).error?.message || 
+                        (errorData as { message?: string }).message || errorMessage;
+        } catch {
           // If we can't parse the error, use the raw response
-          errorMessage = error.response.data;
+          errorMessage = String(err.response.data);
         }
       }
       console.error("OpenRouter API error details:", {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
+        status: err.response?.status,
+        statusText: err.response?.statusText,
+        data: err.response?.data,
         message: errorMessage
       });
       throw new Error(`OpenRouter API error: ${errorMessage}`);
@@ -155,30 +157,32 @@ export class OpenRouterClient {
             try {
               const parsed: OpenRouterStreamChunk = JSON.parse(data);
               yield parsed;
-            } catch (error) {
+            } catch {
               // Skip invalid JSON (like comments)
               continue;
             }
           }
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Extract the actual error message from the response
-      let errorMessage = error.message;
+      const err = error as { message?: string; response?: { data?: unknown; status?: number; statusText?: string } };
+      let errorMessage = err.message || 'Unknown error';
       let errorDetails = null;
       
-      if (error.response?.data) {
+      if (err.response?.data) {
         try {
           // If it's a stream, we need to read it differently
-          if (error.response.data.readable) {
+          if ((err.response.data as { readable?: boolean }).readable) {
             // This is a stream, let's try to read the error message
             const chunks: Buffer[] = [];
-            error.response.data.on('data', (chunk: Buffer) => chunks.push(chunk));
-            error.response.data.on('end', () => {
+            (err.response.data as { on: (event: string, callback: (chunk: Buffer) => void) => void }).on('data', (chunk: Buffer) => chunks.push(chunk));
+            (err.response.data as { on: (event: string, callback: () => void) => void }).on('end', () => {
               const responseText = Buffer.concat(chunks).toString();
               try {
                 const errorData = JSON.parse(responseText);
-                errorDetails = errorData.error?.message || errorData.message || responseText;
+                errorDetails = (errorData as { error?: { message?: string }; message?: string }).error?.message || 
+                              (errorData as { message?: string }).message || responseText;
               } catch {
                 errorDetails = responseText;
               }
@@ -186,21 +190,22 @@ export class OpenRouterClient {
             // For now, use a generic message
             errorMessage = "Bad Request - check request parameters";
           } else {
-            const errorData = typeof error.response.data === 'string' 
-              ? JSON.parse(error.response.data) 
-              : error.response.data;
-            errorMessage = errorData.error?.message || errorData.message || errorMessage;
+            const errorData = typeof err.response.data === 'string' 
+              ? JSON.parse(err.response.data) 
+              : err.response.data;
+            errorMessage = (errorData as { error?: { message?: string }; message?: string }).error?.message || 
+                          (errorData as { message?: string }).message || errorMessage;
             errorDetails = errorData;
           }
-        } catch (parseError) {
+        } catch {
           // If we can't parse the error, use the raw response
-          errorMessage = error.response.data;
+          errorMessage = String(err.response.data);
         }
       }
       
       console.error("OpenRouter streaming error details:", {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
+        status: err.response?.status,
+        statusText: err.response?.statusText,
         message: errorMessage,
         details: errorDetails
       });
@@ -208,7 +213,7 @@ export class OpenRouterClient {
     }
   }
 
-  async getModels(): Promise<any[]> {
+  async getModels(): Promise<unknown[]> {
     const response = await axios.get(`${this.baseURL}/models`, {
       headers: this.getHeaders(),
     });
